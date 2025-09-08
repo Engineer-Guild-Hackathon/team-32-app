@@ -11,6 +11,16 @@ export interface ImageGenerationResponse {
   error?: string;
 }
 
+// Helper to convert File to base64 for API
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
 // 服のアイテム画像生成
 export async function generateClothingItemImage(
   clothingDescription: string
@@ -46,12 +56,17 @@ export async function generateDressUpImage(
   userImage?: File
 ): Promise<ImageGenerationResponse> {
   try {
+    let userImageBase64: string | undefined;
+    if (userImage) {
+      userImageBase64 = await fileToBase64(userImage);
+    }
+
     const response = await fetch('/api/generate-dress-up', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ items, userImage }),
+      body: JSON.stringify({ items, userImage: userImageBase64 }),
     });
     
     const data = await response.json();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,35 +14,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured.' }, { status: 500 });
     }
 
-    // Images API (Imagen 3/3-fast equivalent) を使用
-    const imagesApiUrl = `https://generativelanguage.googleapis.com/v1beta/images:generate?key=${apiKey}`;
-    
-    const imagesApiResponse = await fetch(imagesApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "images" });
+
+    const imageResult = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: `Create a high-quality, clean product photo of a ${prompt}. The image should be on a white background, well-lit, and show the clothing item clearly. Style: professional product photography, clean and minimalist.` }] }],
+      generationConfig: {
+        responseMimeType: "image/jpeg",
       },
-      body: JSON.stringify({
-        prompt: {
-          text: `Create a high-quality, clean product photo of a ${prompt}. The image should be on a white background, well-lit, and show the clothing item clearly. Style: professional product photography, clean and minimalist.`,
-        },
-      }),
     });
 
-    if (!imagesApiResponse.ok) {
-      const errorData = await imagesApiResponse.json();
-      console.error('Images API error:', errorData);
-      return NextResponse.json(
-        { error: `Images API error: ${errorData.error.message}` },
-        { status: imagesApiResponse.status }
-      );
+    const response = imageResult.response;
+    const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+
+    if (imageData && imageData.mimeType && imageData.data) {
+      const imageUrl = `data:${imageData.mimeType};base64,${imageData.data}`;
+      return NextResponse.json({ success: true, imageUrl });
+    } else {
+      console.error('Images API did not return image data:', response);
+      return NextResponse.json({ error: 'Failed to generate image from Images API.' }, { status: 500 });
     }
-
-    const imagesApiResult = await imagesApiResponse.json();
-    const base64Image = imagesApiResult.images[0].image.data; // レスポンス構造に応じて調整が必要
-    const imageUrl = `data:image/png;base64,${base64Image}`;
-
-    return NextResponse.json({ success: true, imageUrl });
   } catch (error) {
     console.error('Error in generate-image API:', error);
     return NextResponse.json(

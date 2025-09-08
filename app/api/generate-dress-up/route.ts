@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { items, userImage } = body; // userImageは現在Images APIで直接使用していない
+    const { items, userImage } = await request.json();
 
     if (!items || !Array.isArray(items)) {
       return NextResponse.json({ error: 'Items array is required' }, { status: 400 });
@@ -14,41 +14,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured.' }, { status: 500 });
     }
 
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "images" });
+
     const clothingDescription = items
       .map((item: any) => `${item.color} ${item.name}${item.brand ? ` by ${item.brand}` : ''}`)
       .join(', ');
 
     const prompt = `Create a realistic full-body portrait of a person wearing: ${clothingDescription}. The person should be wearing the clothing items naturally and the outfit should look cohesive and stylish. Style: professional fashion photography, good lighting, clean background. The person should be standing in a natural pose, showing the full outfit clearly.`;
 
-    // Images API (Imagen 3/3-fast equivalent) を使用
-    const imagesApiUrl = `https://generativelanguage.googleapis.com/v1beta/images:generate?key=${apiKey}`;
-    
-    const imagesApiResponse = await fetch(imagesApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: {
-          text: prompt,
-        },
-      }),
-    });
+    const contents: Part[] = [{ text: prompt }];
 
-    if (!imagesApiResponse.ok) {
-      const errorData = await imagesApiResponse.json();
-      console.error('Images API error:', errorData);
-      return NextResponse.json(
-        { error: `Images API error: ${errorData.error.message}` },
-        { status: imagesApiResponse.status }
-      );
+    if (userImage) {
+      // userImage is expected to be a base64 data URL (e.g., data:image/png;base64,...)
+      const [mimeTypePart, dataPart] = userImage.split(';base64,');
+      const mimeType = mimeTypePart.split(':')[1];
+      contents.unshift({
+        inlineData: {
+          mimeType: mimeType,
+          data: dataPart,
+        },
+      });
     }
 
-    const imagesApiResult = await imagesApiResponse.json();
-    const base64Image = imagesApiResult.images[0].image.data; // レスポンス構造に応じて調整が必要
-    const imageUrl = `data:image/png;base64,${base64Image}`;
+    const imageResult = await model.generateContent({
+      contents: [{ role: "user", parts: contents }],
+      generationConfig: {
+        responseMimeType: "image/jpeg",
+      },
+    });
 
-    return NextResponse.json({ success: true, imageUrl });
+    const response = imageResult.response;
+    const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+
+    if (imageData && imageData.mimeType && imageData.data) {
+      const imageUrl = `data:${imageData.mimeType};base64,${imageData.data}`;
+      return NextResponse.json({ success: true, imageUrl });
+    } else {
+      console.error('Images API did not return image data for dress-up:', response);
+      return NextResponse.json({ error: 'Failed to generate dress-up image from Images API.' }, { status: 500 });
+    }
   } catch (error) {
     console.error('Error in generate-dress-up API:', error);
     return NextResponse.json(
