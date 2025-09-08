@@ -24,7 +24,9 @@ import {
   Package,
   Footprints,
   Watch,
+  Sparkles,
 } from "lucide-react"
+import { generateDressUpImage } from "@/lib/gemini"
 
 type ClothingCategory = "tops" | "bottoms" | "shoes" | "accessories"
 
@@ -35,6 +37,7 @@ interface ClothingItem {
   color: string
   brand?: string
   photo?: File
+  generatedImageUrl?: string
   tags: string[]
 }
 
@@ -101,6 +104,8 @@ export function DressUpEditor() {
   const [canvasScale, setCanvasScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isGeneratingDressUp, setIsGeneratingDressUp] = useState(false)
+  const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -188,6 +193,35 @@ export function DressUpEditor() {
     alert("コーディネートを保存しました！")
   }
 
+  const handleGenerateDressUpImage = async () => {
+    if (placedItems.length === 0) {
+      alert('着せ替えアイテムを追加してください');
+      return;
+    }
+
+    setIsGeneratingDressUp(true);
+    try {
+      const items = placedItems.map(placedItem => ({
+        name: placedItem.item.name,
+        color: placedItem.item.color,
+        brand: placedItem.item.brand,
+      }));
+
+      const result = await generateDressUpImage(items, userPhoto || undefined);
+      
+      if (result.success && result.imageUrl) {
+        setGeneratedDressUpImage(result.imageUrl);
+      } else {
+        alert(`着せ替え画像生成に失敗しました: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error generating dress-up image:', error);
+      alert('着せ替え画像生成中にエラーが発生しました');
+    } finally {
+      setIsGeneratingDressUp(false);
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -201,6 +235,13 @@ export function DressUpEditor() {
           <Button variant="outline" onClick={() => setPlacedItems([])}>
             <RotateCcw className="w-4 h-4 mr-2" />
             リセット
+          </Button>
+          <Button 
+            onClick={handleGenerateDressUpImage}
+            disabled={isGeneratingDressUp || placedItems.length === 0}
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {isGeneratingDressUp ? "生成中..." : "AIで着せ替え画像生成"}
           </Button>
           <Button onClick={exportOutfit}>
             <Save className="w-4 h-4 mr-2" />
@@ -239,8 +280,16 @@ export function DressUpEditor() {
                         onClick={() => addClothingItem(item)}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <Upload className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center overflow-hidden">
+                            {item.generatedImageUrl ? (
+                              <img
+                                src={item.generatedImageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Upload className="w-4 h-4 text-muted-foreground" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{item.name}</p>
@@ -278,6 +327,17 @@ export function DressUpEditor() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* AI生成画像表示 */}
+              {generatedDressUpImage && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium mb-2">AI生成画像</h3>
+                  <img
+                    src={generatedDressUpImage}
+                    alt="Generated dress-up"
+                    className="w-full aspect-[3/4] object-cover rounded-lg border"
+                  />
+                </div>
+              )}
               {!userPhoto ? (
                 <div className="aspect-[3/4] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center">
                   <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="user-photo" />
