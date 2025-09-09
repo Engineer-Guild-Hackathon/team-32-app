@@ -1,4 +1,3 @@
-import { ClothingManager } from "@/components/clothing-manager"
 import { DressUpEditor } from "@/components/dress-up-editor"
 import { FeedbackAnalyzer } from "@/components/feedback-analyzer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -18,21 +17,16 @@ export default function StylingPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">スタイリング & 着せ替え</h1>
-            <p className="text-muted-foreground">服を登録して、着せ替えを楽しみましょう</p>
+            <h1 className="text-3xl font-bold text-foreground">着せ替え & スタイル分析</h1>
+            <p className="text-muted-foreground">登録した服で着せ替えを楽しみ、スタイルを分析しましょう</p>
           </div>
         </div>
 
-        <Tabs defaultValue="clothing" className="max-w-6xl mx-auto">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="clothing">服アイテム管理</TabsTrigger>
+        <Tabs defaultValue="editor" className="max-w-6xl mx-auto">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="editor">着せ替えエディター</TabsTrigger>
             <TabsTrigger value="feedback">スタイル分析</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="clothing">
-            <ClothingManager />
-          </TabsContent>
 
           <TabsContent value="editor">
             <DressUpEditor />
@@ -42,6 +36,14 @@ export default function StylingPage() {
             <FeedbackAnalyzer />
           </TabsContent>
         </Tabs>
+
+        <div className="max-w-6xl mx-auto mt-8">
+          <Link href="/clothing">
+            <Button variant="outline" className="w-full">
+              服アイテム管理に戻る
+            </Button>
+          </Link>
+        </div>
       </div>
     </main>
   )
