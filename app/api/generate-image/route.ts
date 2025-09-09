@@ -38,13 +38,6 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Error in generate-image API:', error);
-    
-    // クォータ制限の場合はプレースホルダー画像を返す
-    if (error instanceof Error && (error.message.includes('quota') || error.message.includes('billing'))) {
-      const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEdlbmVyYXRpb248L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjEuNWVtIj5BUEkgUXVvdGEgRXhjZWVkZWQ8L3RleHQ+PC9zdmc+';
-      return NextResponse.json({ success: true, imageUrl: placeholderImage });
-    }
-    
     return NextResponse.json(
       { error: `Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
