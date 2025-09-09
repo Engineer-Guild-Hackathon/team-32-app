@@ -118,13 +118,21 @@ export function ProfileSetup() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">これで準備完了です。次は服を登録して着せ替えを楽しみましょう！</p>
-            <Link href="/styling">
-              <Button size="lg" className="gap-2">
-                スタイリングを始める
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+            <p className="text-muted-foreground">これで準備完了です。まずは服を登録してから着せ替えを楽しみましょう！</p>
+            <div className="space-y-3">
+              <Link href="/clothing">
+                <Button size="lg" className="gap-2 w-full">
+                  服アイテムを登録する
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="/styling">
+                <Button variant="outline" size="lg" className="gap-2 w-full">
+                  着せ替え・スタイル分析へ
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
