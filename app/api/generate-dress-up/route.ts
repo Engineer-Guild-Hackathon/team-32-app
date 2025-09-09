@@ -18,7 +18,15 @@ export async function POST(request: NextRequest) {
       .map((item: any) => `${item.color} ${item.name}${item.brand ? ` by ${item.brand}` : ''}`)
       .join(', ');
 
-    const prompt = `Create a realistic full-body portrait of a person wearing: ${clothingDescription}. The person should be wearing the clothing items naturally and the outfit should look cohesive and stylish. Style: professional fashion photography, good lighting, clean background. The person should be standing in a natural pose, showing the full outfit clearly.`;
+    const prompt = `Create a realistic full-body portrait of the SAME PERSON from the provided image wearing: ${clothingDescription}. 
+    
+    IMPORTANT: 
+    - Keep the EXACT SAME person (same gender, same facial features, same body type, same age)
+    - Only change the clothing to the specified items
+    - Maintain the person's original appearance and identity
+    - The person should be wearing the clothing items naturally and the outfit should look cohesive and stylish
+    - Style: professional fashion photography, good lighting, clean background
+    - The person should be standing in a natural pose, showing the full outfit clearly`;
 
     // Gemini 2.5 Flash Image (Nano Banana) を正しく使用
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -36,9 +44,12 @@ export async function POST(request: NextRequest) {
           data: dataPart,
         },
       });
+      contents.push({ 
+        text: `This is the reference person. Please create a new image of this EXACT SAME person wearing: ${clothingDescription}. Keep all facial features, gender, body type, and age exactly the same. Only change the clothing.` 
+      });
+    } else {
+      contents.push({ text: prompt });
     }
-    
-    contents.push({ text: prompt });
 
     const result = await model.generateContent(contents);
     const response = result.response;
