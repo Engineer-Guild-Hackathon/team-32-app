@@ -19,7 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Upload, Plus, Shirt, Package, Footprints, Watch, X, Edit, Trash2 } from "lucide-react"
+import { Upload, Plus, Shirt, Package, Footprints, Watch, X, Edit, Trash2, Sparkles } from "lucide-react"
+import { generateClothingItemImage } from "@/lib/gemini"
 
 type ClothingCategory = "tops" | "bottoms" | "shoes" | "accessories"
 
@@ -31,6 +32,7 @@ interface ClothingItem {
   brand?: string
   description?: string
   photo?: File
+  generatedImageUrl?: string
   tags: string[]
   createdAt: Date
 }
@@ -87,6 +89,7 @@ export function ClothingManager() {
     tags: [],
   })
   const [tagInput, setTagInput] = useState("")
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -112,6 +115,30 @@ export function ClothingManager() {
     }))
   }
 
+  const generateItemImage = async () => {
+    if (!newItem.name || !newItem.color) {
+      alert('アイテム名と色を入力してください');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+      const clothingDescription = `${newItem.color} ${newItem.name}${newItem.brand ? ` by ${newItem.brand}` : ''}`;
+      const result = await generateClothingItemImage(clothingDescription);
+      
+      if (result.success && result.imageUrl) {
+        setNewItem((prev) => ({ ...prev, generatedImageUrl: result.imageUrl }));
+      } else {
+        alert(`画像生成に失敗しました: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      alert('画像生成中にエラーが発生しました');
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  }
+
   const handleAddItem = () => {
     if (newItem.name && newItem.category && newItem.color) {
       const item: ClothingItem = {
@@ -122,6 +149,7 @@ export function ClothingManager() {
         brand: newItem.brand,
         description: newItem.description,
         photo: newItem.photo,
+        generatedImageUrl: newItem.generatedImageUrl,
         tags: newItem.tags || [],
         createdAt: new Date(),
       }
@@ -151,7 +179,13 @@ export function ClothingManager() {
     <Card className="group hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-          {item.photo ? (
+          {item.generatedImageUrl ? (
+            <img
+              src={item.generatedImageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : item.photo ? (
             <img
               src={URL.createObjectURL(item.photo) || "/placeholder.svg"}
               alt={item.name}
@@ -306,12 +340,38 @@ export function ClothingManager() {
 
               <div>
                 <Label htmlFor="photo">写真</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="item-photo" />
-                  <label htmlFor="item-photo" className="cursor-pointer">
-                    <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm">{newItem.photo ? newItem.photo.name : "クリックして写真を選択"}</p>
-                  </label>
+                <div className="space-y-2">
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="item-photo" />
+                    <label htmlFor="item-photo" className="cursor-pointer">
+                      <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm">{newItem.photo ? newItem.photo.name : "クリックして写真を選択"}</p>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={generateItemImage}
+                      disabled={isGeneratingImage || !newItem.name || !newItem.color}
+                      className="flex-1"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {isGeneratingImage ? "生成中..." : "AIで画像を生成"}
+                    </Button>
+                  </div>
+                  
+                  {newItem.generatedImageUrl && (
+                    <div className="mt-2">
+                      <img
+                        src={newItem.generatedImageUrl}
+                        alt="Generated preview"
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
