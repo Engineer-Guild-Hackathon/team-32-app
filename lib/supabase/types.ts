@@ -37,27 +37,21 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
-          face_image_url: string | null
           frame_type: Database["public"]["Enums"]["frame_type"] | null
-          full_body_image_url: string | null
           id: string
           name: string
           personal_color: Database["public"]["Enums"]["personal_color"] | null
         }
         Insert: {
           created_at?: string
-          face_image_url?: string | null
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
-          full_body_image_url?: string | null
           id?: string
           name: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null
         }
         Update: {
           created_at?: string
-          face_image_url?: string | null
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
-          full_body_image_url?: string | null
           id?: string
           name?: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null

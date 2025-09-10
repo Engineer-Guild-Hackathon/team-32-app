@@ -6,8 +6,6 @@ create table "public"."profiles" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
     "name" text not null,
-    "face_image_url" text,
-    "full_body_image_url" text,
     "personal_color" personal_color,
     "frame_type" frame_type
 );
