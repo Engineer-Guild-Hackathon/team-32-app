@@ -1,13 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { User, Palette, Baby as Body, ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { Palette, Baby as Body } from "lucide-react"
 
 type BodyType = "straight" | "wave" | "natural" | ""
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
@@ -18,12 +17,11 @@ interface ProfileData {
 }
 
 export function ProfileSetup() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const router = useRouter()
   const [profileData, setProfileData] = useState<ProfileData>({
     bodyType: "",
     personalColor: "",
   })
-  const [isCompleted, setIsCompleted] = useState(false)
 
   const bodyTypes = [
     {
@@ -70,155 +68,96 @@ export function ProfileSetup() {
     },
   ]
 
-  const handleNext = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1)
-    }
-  }
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
   const handleComplete = () => {
     console.log("Profile setup completed:", profileData)
-    setIsCompleted(true)
+    router.push("/")
   }
 
-  const isStepComplete = (step: number) => {
-    switch (step) {
-      case 1:
-        return profileData.bodyType !== ""
-      case 2:
-        return profileData.personalColor !== ""
-      default:
-        return false
+  const handleBodyTypeChange = (value: string) => {
+    if (profileData.bodyType === value) {
+      setProfileData((prev) => ({ ...prev, bodyType: "" }))
+    } else {
+      setProfileData((prev) => ({ ...prev, bodyType: value as BodyType }))
     }
   }
 
-  if (isCompleted) {
-    return (
-      <div className="max-w-2xl mx-auto text-center">
-        <Card>
-          <CardHeader>
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <User className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">プロフィール設定完了！</CardTitle>
-            <CardDescription>
-              骨格タイプ:{" "}
-              <span className="font-medium">{bodyTypes.find((t) => t.id === profileData.bodyType)?.name}</span>
-              <br />
-              パーソナルカラー:{" "}
-              <span className="font-medium">
-                {personalColors.find((c) => c.id === profileData.personalColor)?.name}
-              </span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">これで準備完了です。まずは服を登録してから着せ替えを楽しみましょう！</p>
-            <div className="space-y-3">
-              <Link href="/clothing">
-                <Button size="lg" className="gap-2 w-full">
-                  服アイテムを登録する
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link href="/styling">
-                <Button variant="outline" size="lg" className="gap-2 w-full">
-                  着せ替え・スタイル分析へ
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const handlePersonalColorChange = (value: string) => {
+    if (profileData.personalColor === value) {
+      setProfileData((prev) => ({ ...prev, personalColor: "" }))
+    } else {
+      setProfileData((prev) => ({ ...prev, personalColor: value as PersonalColor }))
+    }
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center mb-8">
-        {[1, 2].map((step) => (
-          <div key={step} className="flex items-center">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                currentStep >= step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {step}
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Body Type Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Body className="w-5 h-5 text-primary" />
             </div>
-            {step < 2 && (
-              <div
-                className={cn("w-16 h-0.5 mx-2 transition-colors", currentStep > step ? "bg-primary" : "bg-muted")}
-              />
-            )}
+            <div>
+              <CardTitle>骨格タイプ</CardTitle>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Step 1: Body Type */}
-      {currentStep === 1 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Body className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">骨格診断</CardTitle>
-            <CardDescription>あなたの骨格タイプを選択してください</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup
-              value={profileData.bodyType}
-              onValueChange={(value) => setProfileData((prev) => ({ ...prev, bodyType: value as BodyType }))}
-            >
+        </CardHeader>
+        <CardContent>
+          <RadioGroup value={profileData.bodyType} onValueChange={handleBodyTypeChange}>
+            <div className="grid gap-3">
               {bodyTypes.map((type) => (
                 <div
                   key={type.id}
-                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => handleBodyTypeChange(type.id)}
                 >
-                  <RadioGroupItem value={type.id} id={type.id} className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor={type.id} className="text-base font-medium cursor-pointer">
+                  <RadioGroupItem
+                    value={type.id}
+                    id={`body-${type.id}`}
+                    className="mt-1 pointer-events-none"
+                  />
+                  <div className="flex-1 pointer-events-none">
+                    <Label htmlFor={`body-${type.id}`} className="text-base font-medium">
                       {type.name}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">{type.description}</p>
                   </div>
                 </div>
               ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 2: Personal Color */}
-      {currentStep === 2 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Palette className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl">パーソナルカラー診断</CardTitle>
-            <CardDescription>あなたに似合うカラータイプを選択してください</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup
-              value={profileData.personalColor}
-              onValueChange={(value) => setProfileData((prev) => ({ ...prev, personalColor: value as PersonalColor }))}
-            >
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Personal Color Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Palette className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>パーソナルカラー</CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup value={profileData.personalColor} onValueChange={handlePersonalColorChange}>
+            <div className="grid gap-3">
               {personalColors.map((color) => (
                 <div
                   key={color.id}
-                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => handlePersonalColorChange(color.id)}
                 >
-                  <RadioGroupItem value={color.id} id={color.id} className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor={color.id} className="text-base font-medium cursor-pointer">
+                  <RadioGroupItem
+                    value={color.id}
+                    id={`color-${color.id}`}
+                    className="mt-1 pointer-events-none"
+                  />
+                  <div className="flex-1 pointer-events-none">
+                    <Label htmlFor={`color-${color.id}`} className="text-base font-medium">
                       {color.name}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1 mb-3">{color.description}</p>
@@ -234,26 +173,16 @@ export function ProfileSetup() {
                   </div>
                 </div>
               ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      )}
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
 
-      {/* Navigation buttons */}
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-          戻る
+      {/* Complete button */}
+      <div className="flex justify-end">
+        <Button onClick={handleComplete} size="lg" className="min-w-[200px]">
+          保存
         </Button>
-
-        {currentStep < 2 ? (
-          <Button onClick={handleNext} disabled={!isStepComplete(currentStep)}>
-            次へ
-          </Button>
-        ) : (
-          <Button onClick={handleComplete} disabled={!isStepComplete(currentStep)}>
-            完了
-          </Button>
-        )}
       </div>
     </div>
   )
