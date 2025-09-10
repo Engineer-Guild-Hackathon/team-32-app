@@ -1,259 +1,173 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { User, Palette, Baby as Body, ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { FaceImageUpload } from "@/components/face-image-upload"
+import { FrameTypeSelector } from "@/components/frame-type-selector"
+import { PersonalColorSelector } from "@/components/personal-color-selector"
 
-type BodyType = "straight" | "wave" | "natural" | ""
+type FrameType = "straight" | "wave" | "natural" | ""
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
 
 interface ProfileData {
-  bodyType: BodyType
+  frameType: FrameType
   personalColor: PersonalColor
 }
 
 export function ProfileSetup() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const router = useRouter()
   const [profileData, setProfileData] = useState<ProfileData>({
-    bodyType: "",
+    frameType: "",
     personalColor: "",
   })
-  const [isCompleted, setIsCompleted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [initialImageUrl, setInitialImageUrl] = useState<string | null>(null)
 
-  const bodyTypes = [
-    {
-      id: "straight",
-      name: "ストレート",
-      description: "肩幅と腰幅がほぼ同じで、ウエストのくびれが少ない体型",
-    },
-    {
-      id: "wave",
-      name: "ウェーブ",
-      description: "上半身が華奢で、下半身にボリュームがある体型",
-    },
-    {
-      id: "natural",
-      name: "ナチュラル",
-      description: "骨格がしっかりしていて、筋肉質な印象の体型",
-    },
-  ]
+  useEffect(() => {
+    let isMounted = true
+    let imageUrl: string | null = null
 
-  const personalColors = [
-    {
-      id: "spring",
-      name: "イエベ スプリング",
-      description: "明るく鮮やかな色が似合う、温かみのある肌色",
-      colors: ["#FFD700", "#FF6B35", "#32CD32", "#FF1493"],
-    },
-    {
-      id: "autumn",
-      name: "イエベ オータム",
-      description: "深みのある暖色が似合う、黄みがかった肌色",
-      colors: ["#8B4513", "#DAA520", "#228B22", "#B22222"],
-    },
-    {
-      id: "summer",
-      name: "ブルベ サマー",
-      description: "ソフトで上品な色が似合う、青みがかった肌色",
-      colors: ["#E6E6FA", "#87CEEB", "#F0E68C", "#DDA0DD"],
-    },
-    {
-      id: "winter",
-      name: "ブルベ ウィンター",
-      description: "はっきりとした色が似合う、青みがかった肌色",
-      colors: ["#000080", "#DC143C", "#FFFFFF", "#FF1493"],
-    },
-  ]
+    // Load existing profile data
+    const loadProfile = async () => {
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok && isMounted) {
+          const data = await response.json()
+          setProfileData({
+            frameType: data.frame_type || "",
+            personalColor: data.personal_color || "",
+          })
+        }
 
-  const handleNext = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1)
+        // Try to load existing face image
+        const imageResponse = await fetch('/api/face-image')
+        if (imageResponse.ok && isMounted) {
+          const imageBlob = await imageResponse.blob()
+          imageUrl = URL.createObjectURL(imageBlob)
+          console.log('Face image loaded:', imageUrl)
+          setInitialImageUrl(imageUrl)
+        } else if (!imageResponse.ok) {
+          console.log('No face image found (404 expected):', imageResponse.status)
+        }
+      } catch (error) {
+        // Silently handle errors - image might not exist
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+    
+    loadProfile()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl)
+      }
+    }
+  }, [])
+
+  const handleComplete = async () => {
+    setIsSaving(true)
+    try {
+
+      // Upload image if selected
+      if (selectedImage) {
+        const formData = new FormData()
+        formData.append('file', selectedImage)
+        
+        const uploadResponse = await fetch('/api/upload-face', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) {
+          console.error('Failed to upload image')
+          alert('画像のアップロードに失敗しました')
+          setIsSaving(false)
+          return
+        }
+      }
+
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personal_color: profileData.personalColor || null,
+          frame_type: profileData.frameType || null,
+        }),
+      })
+      
+      if (response.ok) {
+        console.log("Profile saved successfully")
+        router.push("/")
+      } else {
+        const error = await response.json()
+        console.error('Failed to save profile:', error)
+        alert('プロフィールの保存に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error)
+      alert('プロフィールの保存に失敗しました')
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-    }
+  const handleFrameTypeChange = (value: FrameType) => {
+    setProfileData((prev) => ({ ...prev, frameType: value }))
   }
 
-  const handleComplete = () => {
-    console.log("Profile setup completed:", profileData)
-    setIsCompleted(true)
+  const handlePersonalColorChange = (value: PersonalColor) => {
+    setProfileData((prev) => ({ ...prev, personalColor: value }))
   }
 
-  const isStepComplete = (step: number) => {
-    switch (step) {
-      case 1:
-        return profileData.bodyType !== ""
-      case 2:
-        return profileData.personalColor !== ""
-      default:
-        return false
-    }
+  const handleImageSelect = (file: File | null) => {
+    setSelectedImage(file)
   }
 
-  if (isCompleted) {
+  if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto text-center">
-        <Card>
-          <CardHeader>
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <User className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">プロフィール設定完了！</CardTitle>
-            <CardDescription>
-              骨格タイプ:{" "}
-              <span className="font-medium">{bodyTypes.find((t) => t.id === profileData.bodyType)?.name}</span>
-              <br />
-              パーソナルカラー:{" "}
-              <span className="font-medium">
-                {personalColors.find((c) => c.id === profileData.personalColor)?.name}
-              </span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">これで準備完了です。まずは服を登録してから着せ替えを楽しみましょう！</p>
-            <div className="space-y-3">
-              <Link href="/clothing">
-                <Button size="lg" className="gap-2 w-full">
-                  服アイテムを登録する
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link href="/styling">
-                <Button variant="outline" size="lg" className="gap-2 w-full">
-                  着せ替え・スタイル分析へ
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-4xl mx-auto flex justify-center items-center h-64">
+        <div className="text-lg text-muted-foreground">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center mb-8">
-        {[1, 2].map((step) => (
-          <div key={step} className="flex items-center">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                currentStep >= step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {step}
-            </div>
-            {step < 2 && (
-              <div
-                className={cn("w-16 h-0.5 mx-2 transition-colors", currentStep > step ? "bg-primary" : "bg-muted")}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <FaceImageUpload 
+        onImageSelect={handleImageSelect}
+        selectedImage={selectedImage}
+        initialImageUrl={initialImageUrl}
+      />
 
-      {/* Step 1: Body Type */}
-      {currentStep === 1 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Body className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">骨格診断</CardTitle>
-            <CardDescription>あなたの骨格タイプを選択してください</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup
-              value={profileData.bodyType}
-              onValueChange={(value) => setProfileData((prev) => ({ ...prev, bodyType: value as BodyType }))}
-            >
-              {bodyTypes.map((type) => (
-                <div
-                  key={type.id}
-                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors"
-                >
-                  <RadioGroupItem value={type.id} id={type.id} className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor={type.id} className="text-base font-medium cursor-pointer">
-                      {type.name}
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">{type.description}</p>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      )}
+      <FrameTypeSelector
+        value={profileData.frameType}
+        onChange={handleFrameTypeChange}
+      />
 
-      {/* Step 2: Personal Color */}
-      {currentStep === 2 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Palette className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">パーソナルカラー診断</CardTitle>
-            <CardDescription>あなたに似合うカラータイプを選択してください</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup
-              value={profileData.personalColor}
-              onValueChange={(value) => setProfileData((prev) => ({ ...prev, personalColor: value as PersonalColor }))}
-            >
-              {personalColors.map((color) => (
-                <div
-                  key={color.id}
-                  className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors"
-                >
-                  <RadioGroupItem value={color.id} id={color.id} className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor={color.id} className="text-base font-medium cursor-pointer">
-                      {color.name}
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1 mb-3">{color.description}</p>
-                    <div className="flex space-x-2">
-                      {color.colors.map((colorCode, index) => (
-                        <div
-                          key={index}
-                          className="w-6 h-6 rounded-full border border-border"
-                          style={{ backgroundColor: colorCode }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      )}
+      <PersonalColorSelector
+        value={profileData.personalColor}
+        onChange={handlePersonalColorChange}
+      />
 
-      {/* Navigation buttons */}
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-          戻る
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleComplete} 
+          size="lg" 
+          className="min-w-[200px]"
+          disabled={isSaving}
+        >
+          {isSaving ? '保存中...' : '保存'}
         </Button>
-
-        {currentStep < 2 ? (
-          <Button onClick={handleNext} disabled={!isStepComplete(currentStep)}>
-            次へ
-          </Button>
-        ) : (
-          <Button onClick={handleComplete} disabled={!isStepComplete(currentStep)}>
-            完了
-          </Button>
-        )}
       </div>
     </div>
   )
