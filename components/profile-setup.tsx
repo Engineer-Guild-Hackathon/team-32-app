@@ -1,29 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Palette, Baby as Body } from "lucide-react"
 
-type BodyType = "straight" | "wave" | "natural" | ""
+type FrameType = "straight" | "wave" | "natural" | ""
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
 
 interface ProfileData {
-  bodyType: BodyType
+  frameType: FrameType
   personalColor: PersonalColor
 }
 
 export function ProfileSetup() {
   const router = useRouter()
   const [profileData, setProfileData] = useState<ProfileData>({
-    bodyType: "",
+    frameType: "",
     personalColor: "",
   })
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const bodyTypes = [
+  const frameTypes = [
     {
       id: "straight",
       name: "ストレート",
@@ -40,6 +42,27 @@ export function ProfileSetup() {
       description: "骨格がしっかりしていて、筋肉質な印象の体型",
     },
   ]
+
+  useEffect(() => {
+    // Load existing profile data
+    const loadProfile = async () => {
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setProfileData({
+            frameType: data.frame_type || "",
+            personalColor: data.personal_color || "",
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadProfile()
+  }, [])
 
   const personalColors = [
     {
@@ -68,16 +91,41 @@ export function ProfileSetup() {
     },
   ]
 
-  const handleComplete = () => {
-    console.log("Profile setup completed:", profileData)
-    router.push("/")
+  const handleComplete = async () => {
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personal_color: profileData.personalColor || null,
+          frame_type: profileData.frameType || null,
+        }),
+      })
+      
+      if (response.ok) {
+        console.log("Profile saved successfully")
+        router.push("/")
+      } else {
+        const error = await response.json()
+        console.error('Failed to save profile:', error)
+        alert('プロフィールの保存に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error)
+      alert('プロフィールの保存に失敗しました')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleBodyTypeChange = (value: string) => {
-    if (profileData.bodyType === value) {
-      setProfileData((prev) => ({ ...prev, bodyType: "" }))
+  const handleFrameTypeChange = (value: string) => {
+    if (profileData.frameType === value) {
+      setProfileData((prev) => ({ ...prev, frameType: "" }))
     } else {
-      setProfileData((prev) => ({ ...prev, bodyType: value as BodyType }))
+      setProfileData((prev) => ({ ...prev, frameType: value as FrameType }))
     }
   }
 
@@ -87,6 +135,14 @@ export function ProfileSetup() {
     } else {
       setProfileData((prev) => ({ ...prev, personalColor: value as PersonalColor }))
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto flex justify-center items-center h-64">
+        <div className="text-lg text-muted-foreground">読み込み中...</div>
+      </div>
+    )
   }
 
   return (
@@ -104,21 +160,21 @@ export function ProfileSetup() {
           </div>
         </CardHeader>
         <CardContent>
-          <RadioGroup value={profileData.bodyType} onValueChange={handleBodyTypeChange}>
+          <RadioGroup value={profileData.frameType} onValueChange={handleFrameTypeChange}>
             <div className="grid gap-3">
-              {bodyTypes.map((type) => (
+              {frameTypes.map((type) => (
                 <div
                   key={type.id}
                   className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => handleBodyTypeChange(type.id)}
+                  onClick={() => handleFrameTypeChange(type.id)}
                 >
                   <RadioGroupItem
                     value={type.id}
-                    id={`body-${type.id}`}
+                    id={`frame-${type.id}`}
                     className="mt-1 pointer-events-none"
                   />
                   <div className="flex-1 pointer-events-none">
-                    <Label htmlFor={`body-${type.id}`} className="text-base font-medium">
+                    <Label htmlFor={`frame-${type.id}`} className="text-base font-medium">
                       {type.name}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">{type.description}</p>
@@ -180,8 +236,13 @@ export function ProfileSetup() {
 
       {/* Complete button */}
       <div className="flex justify-end">
-        <Button onClick={handleComplete} size="lg" className="min-w-[200px]">
-          保存
+        <Button 
+          onClick={handleComplete} 
+          size="lg" 
+          className="min-w-[200px]"
+          disabled={isSaving}
+        >
+          {isSaving ? '保存中...' : '保存'}
         </Button>
       </div>
     </div>
