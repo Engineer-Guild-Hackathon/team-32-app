@@ -106,11 +106,15 @@ export function DressUpEditor() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isGeneratingDressUp, setIsGeneratingDressUp] = useState(false)
   const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [originalUserPhoto, setOriginalUserPhoto] = useState<File | null>(null)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setUserPhoto(file)
+      setOriginalUserPhoto(file) // 元の写真も保存
     }
   }
 
@@ -128,6 +132,9 @@ export function DressUpEditor() {
     }
     setPlacedItems((prev) => [...prev, newPlacedItem])
     setSelectedItem(newPlacedItem.id)
+    
+    // 新しい服を追加した際は、生成された画像をクリアしない
+    // 生成中も前回の画像を表示し続ける
   }
 
   const updatePlacedItem = (id: string, updates: Partial<PlacedItem>) => {
@@ -139,6 +146,9 @@ export function DressUpEditor() {
     if (selectedItem === id) {
       setSelectedItem(null)
     }
+    
+    // 服を削除した際は、生成された画像をクリアしない
+    // 生成中も前回の画像を表示し続ける
   }
 
   const handleMouseDown = useCallback(
@@ -199,15 +209,32 @@ export function DressUpEditor() {
       return;
     }
 
+    await generateDressUpImageDirectly(placedItems);
+  }
+
+  const generateDressUpImageDirectly = async (itemsToGenerate: PlacedItem[]) => {
+    if (itemsToGenerate.length === 0) {
+      return;
+    }
+
+    if (!originalUserPhoto) {
+      alert('まず写真をアップロードしてください');
+      return;
+    }
+
     setIsGeneratingDressUp(true);
     try {
-      const items = placedItems.map(placedItem => ({
+      const items = itemsToGenerate.map(placedItem => ({
         name: placedItem.item.name,
         color: placedItem.item.color,
         brand: placedItem.item.brand,
       }));
 
-      const result = await generateDressUpImage(items, userPhoto || undefined);
+      // 生成された画像がある場合は、それを基準に新しい画像を生成
+      // ない場合は元の写真を基準にする
+      const baseImage = generatedDressUpImage ? await convertDataUrlToFile(generatedDressUpImage) : originalUserPhoto;
+      
+      const result = await generateDressUpImage(items, baseImage);
       
       if (result.success && result.imageUrl) {
         setGeneratedDressUpImage(result.imageUrl);
@@ -222,6 +249,75 @@ export function DressUpEditor() {
     }
   }
 
+  // DataURLをFileオブジェクトに変換するヘルパー関数
+  const convertDataUrlToFile = async (dataUrl: string): Promise<File> => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], 'generated-image.png', { type: 'image/png' });
+  }
+
+  // ドラッグ&ドロップ関連のハンドラー
+  const handleDragStart = (e: React.DragEvent, item: ClothingItem) => {
+    e.dataTransfer.setData('clothing-item', JSON.stringify(item))
+    e.dataTransfer.effectAllowed = 'copy'
+    setIsDragging(true)
+  }
+
+  const handleDragEnd = () => {
+    setIsDragging(false)
+    setIsDragOver(false)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    
+    try {
+      const clothingData = e.dataTransfer.getData('clothing-item')
+      if (clothingData) {
+        const item = JSON.parse(clothingData)
+        addClothingItem(item)
+        
+        // 服を追加した後、自動的に画像生成を実行
+        // placedItemsの更新を待つために、新しい配列を作成してから生成
+        const newPlacedItems = [...placedItems, {
+          id: `placed-${Date.now()}`,
+          clothingId: item.id,
+          x: 200,
+          y: 200,
+          scale: 1,
+          rotation: 0,
+          zIndex: placedItems.length + 1,
+          visible: true,
+          item,
+        }]
+        
+        setTimeout(async () => {
+          try {
+            await generateDressUpImageDirectly(newPlacedItems)
+          } catch (error) {
+            console.error('Error in auto-generation after drop:', error)
+            alert('画像生成中にエラーが発生しました。手動で「AIで着せ替え画像生成」ボタンを押してください。')
+          }
+        }, 500)
+      }
+    } catch (error) {
+      console.error('Error in handleDrop:', error)
+      alert('ドロップ処理中にエラーが発生しました')
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -232,10 +328,24 @@ export function DressUpEditor() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPlacedItems([])}>
+          <Button variant="outline" onClick={() => {
+            setPlacedItems([])
+            setGeneratedDressUpImage(null)
+            setUserPhoto(originalUserPhoto) // 元の写真に戻す
+          }}>
             <RotateCcw className="w-4 h-4 mr-2" />
             リセット
           </Button>
+          {generatedDressUpImage && (
+            <Button variant="outline" onClick={() => {
+              setGeneratedDressUpImage(null)
+              setUserPhoto(originalUserPhoto) // 元の写真に戻す
+              setPlacedItems([]) // アイテムもクリア
+            }}>
+              <Eye className="w-4 h-4 mr-2" />
+              元の画像に戻る
+            </Button>
+          )}
           <Button 
             onClick={handleGenerateDressUpImage}
             disabled={isGeneratingDressUp || placedItems.length === 0}
@@ -256,6 +366,9 @@ export function DressUpEditor() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">服アイテム</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                服をドラッグして人物にドロップするか、クリックして追加
+              </p>
             </CardHeader>
             <CardContent>
               <Tabs value={activeCategory} onValueChange={(value) => setActiveCategory(value as ClothingCategory)}>
@@ -276,7 +389,12 @@ export function DressUpEditor() {
                     {getItemsByCategory(key as ClothingCategory).map((item) => (
                       <div
                         key={item.id}
-                        className="p-3 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                        className={`p-3 border rounded-lg hover:bg-accent/50 cursor-grab transition-all duration-200 ${
+                          isDragging ? 'opacity-50 scale-95' : ''
+                        }`}
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, item)}
+                        onDragEnd={handleDragEnd}
                         onClick={() => addClothingItem(item)}
                       >
                         <div className="flex items-center gap-3">
@@ -327,17 +445,6 @@ export function DressUpEditor() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* AI生成画像表示 */}
-              {generatedDressUpImage && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium mb-2">AI生成画像</h3>
-                  <img
-                    src={generatedDressUpImage}
-                    alt="Generated dress-up"
-                    className="w-full aspect-[3/4] object-cover rounded-lg border"
-                  />
-                </div>
-              )}
               {!userPhoto ? (
                 <div className="aspect-[3/4] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center">
                   <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="user-photo" />
@@ -347,17 +454,100 @@ export function DressUpEditor() {
                     <p className="text-sm text-muted-foreground">着せ替えに使用する写真を選択してください</p>
                   </label>
                 </div>
+              ) : generatedDressUpImage ? (
+                /* 生成された画像を表示（ドラッグ&ドロップ機能付き） */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-primary">✨ AI生成画像</h3>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        setGeneratedDressUpImage(null)
+                        setUserPhoto(originalUserPhoto) // 元の写真に戻す
+                        setPlacedItems([]) // アイテムもクリア
+                      }}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      元の画像に戻る
+                    </Button>
+                  </div>
+                  <div
+                    className={`relative aspect-[3/4] border rounded-lg overflow-hidden bg-muted transition-all duration-200 ${
+                      isDragOver ? 'border-primary border-4 bg-primary/5 scale-105' : ''
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <img
+                      src={generatedDressUpImage}
+                      alt="Generated dress-up"
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* 生成中のローディングオーバーレイ */}
+                    {isGeneratingDressUp && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Sparkles className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                          <p className="font-medium">新しい着せ替え画像を生成中...</p>
+                          <p className="text-sm opacity-80">しばらくお待ちください</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* ドロップ時のオーバーレイ */}
+                    {isDragOver && !isGeneratingDressUp && (
+                      <div className="absolute inset-0 bg-primary/20 border-4 border-primary border-dashed flex items-center justify-center">
+                        <div className="text-center text-primary">
+                          <Sparkles className="w-8 h-8 mx-auto mb-2" />
+                          <p className="font-medium">ここに服をドロップ</p>
+                          <p className="text-sm opacity-80">新しい着せ替え画像を生成します</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               ) : (
+                /* 元の画像とドラッグ&ドロップ機能を表示 */
                 <div
                   ref={canvasRef}
-                  className="relative aspect-[3/4] border rounded-lg overflow-hidden bg-muted"
+                  className={`relative aspect-[3/4] border rounded-lg overflow-hidden bg-muted transition-all duration-200 ${
+                    isDragOver ? 'border-primary border-4 bg-primary/5 scale-105' : ''
+                  }`}
                   style={{ transform: `scale(${canvasScale})`, transformOrigin: "top left" }}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
                   <img
                     src={URL.createObjectURL(userPhoto) || "/placeholder.svg"}
                     alt="User"
                     className="w-full h-full object-cover"
                   />
+                  
+                  {/* 生成中のローディングオーバーレイ */}
+                  {isGeneratingDressUp && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Sparkles className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                        <p className="font-medium">着せ替え画像を生成中...</p>
+                        <p className="text-sm opacity-80">しばらくお待ちください</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* ドロップ時のオーバーレイ */}
+                  {isDragOver && !isGeneratingDressUp && (
+                    <div className="absolute inset-0 bg-primary/20 border-4 border-primary border-dashed flex items-center justify-center">
+                      <div className="text-center text-primary">
+                        <Sparkles className="w-8 h-8 mx-auto mb-2" />
+                        <p className="font-medium">ここに服をドロップ</p>
+                        <p className="text-sm opacity-80">着せ替え画像を生成します</p>
+                      </div>
+                    </div>
+                  )}
 
                   {placedItems
                     .filter((item) => item.visible)
