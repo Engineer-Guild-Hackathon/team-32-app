@@ -133,10 +133,8 @@ export function DressUpEditor() {
     setPlacedItems((prev) => [...prev, newPlacedItem])
     setSelectedItem(newPlacedItem.id)
     
-    // 新しい服を追加した際は、生成された画像をクリア
-    if (generatedDressUpImage) {
-      setGeneratedDressUpImage(null)
-    }
+    // 新しい服を追加した際は、生成された画像をクリアしない
+    // 生成中も前回の画像を表示し続ける
   }
 
   const updatePlacedItem = (id: string, updates: Partial<PlacedItem>) => {
@@ -149,10 +147,8 @@ export function DressUpEditor() {
       setSelectedItem(null)
     }
     
-    // 服を削除した際は、生成された画像をクリア
-    if (generatedDressUpImage) {
-      setGeneratedDressUpImage(null)
-    }
+    // 服を削除した際は、生成された画像をクリアしない
+    // 生成中も前回の画像を表示し続ける
   }
 
   const handleMouseDown = useCallback(
@@ -490,8 +486,19 @@ export function DressUpEditor() {
                       className="w-full h-full object-cover"
                     />
                     
+                    {/* 生成中のローディングオーバーレイ */}
+                    {isGeneratingDressUp && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Sparkles className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                          <p className="font-medium">新しい着せ替え画像を生成中...</p>
+                          <p className="text-sm opacity-80">しばらくお待ちください</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* ドロップ時のオーバーレイ */}
-                    {isDragOver && (
+                    {isDragOver && !isGeneratingDressUp && (
                       <div className="absolute inset-0 bg-primary/20 border-4 border-primary border-dashed flex items-center justify-center">
                         <div className="text-center text-primary">
                           <Sparkles className="w-8 h-8 mx-auto mb-2" />
@@ -520,8 +527,19 @@ export function DressUpEditor() {
                     className="w-full h-full object-cover"
                   />
                   
+                  {/* 生成中のローディングオーバーレイ */}
+                  {isGeneratingDressUp && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Sparkles className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                        <p className="font-medium">着せ替え画像を生成中...</p>
+                        <p className="text-sm opacity-80">しばらくお待ちください</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* ドロップ時のオーバーレイ */}
-                  {isDragOver && (
+                  {isDragOver && !isGeneratingDressUp && (
                     <div className="absolute inset-0 bg-primary/20 border-4 border-primary border-dashed flex items-center justify-center">
                       <div className="text-center text-primary">
                         <Sparkles className="w-8 h-8 mx-auto mb-2" />
