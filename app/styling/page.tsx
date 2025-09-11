@@ -1,5 +1,5 @@
 import { DressUpEditor } from "@/components/dress-up-editor"
-import { FeedbackAnalyzer } from "@/components/feedback-analyzer"
+import { OutfitEvaluator } from "@/components/outfit-evaluator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -17,23 +17,23 @@ export default function StylingPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">着せ替え & スタイル分析</h1>
-            <p className="text-muted-foreground">登録した服で着せ替えを楽しみ、スタイルを分析しましょう</p>
+            <h1 className="text-3xl font-bold text-foreground">着せ替え & 画像評価</h1>
+            <p className="text-muted-foreground">登録した服で着せ替えを楽しみ、AIで画像を評価しましょう</p>
           </div>
         </div>
 
         <Tabs defaultValue="editor" className="max-w-6xl mx-auto">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="editor">着せ替えエディター</TabsTrigger>
-            <TabsTrigger value="feedback">スタイル分析</TabsTrigger>
+            <TabsTrigger value="evaluation">着せ替え評価</TabsTrigger>
           </TabsList>
 
           <TabsContent value="editor">
             <DressUpEditor />
           </TabsContent>
 
-          <TabsContent value="feedback">
-            <FeedbackAnalyzer />
+          <TabsContent value="evaluation">
+            <OutfitEvaluator imageUrl="" />
           </TabsContent>
         </Tabs>
 
