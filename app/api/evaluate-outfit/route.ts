@@ -18,8 +18,37 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Dify API呼び出し
-    const difyResponse = await fetch("https://api.dify.ai/v1/workflows/run", {
+    // ファイルをDifyにアップロード
+    const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+    const binaryData = Buffer.from(base64Data, 'base64');
+    const imageFile = new File([binaryData], 'outfit.jpg', { type: 'image/jpeg' });
+
+    const fileUploadUrl = `${difyApiEndpoint}/files/upload`;
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', imageFile);
+    uploadFormData.append('user', 'webapp');
+
+    const uploadResponse = await fetch(fileUploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${difyApiKey}`,
+      },
+      body: uploadFormData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('File upload error:', errorText);
+      return NextResponse.json({
+        error: `File upload failed: ${uploadResponse.status} ${errorText}`
+      }, { status: 500 });
+    }
+
+    const uploadResult = await uploadResponse.json();
+    const fileId = uploadResult.id;
+
+    // ワークフローを実行
+    const difyResponse = await fetch(`${difyApiEndpoint}/workflows/run`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${difyApiKey}`,
@@ -27,9 +56,14 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         inputs: {
-          image: imageData
+          image: {
+            transfer_method: 'local_file',
+            upload_file_id: fileId,
+            type: 'image',
+          }
         },
-        user:"hello"
+        response_mode: 'blocking',
+        user: 'webapp'
       })
     });
 
@@ -41,7 +75,10 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    const evaluationText = await difyResponse.text();
+    const difyResult = await difyResponse.json();
+
+    // outputs.text からテキストを抽出
+    const evaluationText = difyResult.data?.outputs?.text;
     
     return NextResponse.json({ 
       success: true, 
