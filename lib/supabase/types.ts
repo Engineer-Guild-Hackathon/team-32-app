@@ -39,21 +39,18 @@ export type Database = {
           created_at: string
           frame_type: Database["public"]["Enums"]["frame_type"] | null
           id: string
-          name: string
           personal_color: Database["public"]["Enums"]["personal_color"] | null
         }
         Insert: {
           created_at?: string
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
           id?: string
-          name: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null
         }
         Update: {
           created_at?: string
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
           id?: string
-          name?: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null
         }
         Relationships: []
