@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { FaceImageUpload } from "@/components/face-image-upload"
+import { FullBodyImageUpload } from "@/components/full-body-image-upload"
 import { FrameTypeSelector } from "@/components/frame-type-selector"
 import { PersonalColorSelector } from "@/components/personal-color-selector"
 
@@ -42,15 +42,15 @@ export function ProfileSetup() {
           })
         }
 
-        // Try to load existing face image
-        const imageResponse = await fetch('/api/face-image')
+        // Try to load existing full body image
+        const imageResponse = await fetch('/api/full-body-image')
         if (imageResponse.ok && isMounted) {
           const imageBlob = await imageResponse.blob()
           imageUrl = URL.createObjectURL(imageBlob)
-          console.log('Face image loaded:', imageUrl)
+          console.log('Full body image loaded:', imageUrl)
           setInitialImageUrl(imageUrl)
         } else if (!imageResponse.ok) {
-          console.log('No face image found (404 expected):', imageResponse.status)
+          console.log('No full body image found (404 expected):', imageResponse.status)
         }
       } catch (error) {
         // Silently handle errors - image might not exist
@@ -81,7 +81,7 @@ export function ProfileSetup() {
         const formData = new FormData()
         formData.append('file', selectedImage)
         
-        const uploadResponse = await fetch('/api/upload-face', {
+        const uploadResponse = await fetch('/api/upload-full-body', {
           method: 'POST',
           body: formData,
         })
@@ -143,7 +143,7 @@ export function ProfileSetup() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <FaceImageUpload 
+      <FullBodyImageUpload 
         onImageSelect={handleImageSelect}
         selectedImage={selectedImage}
         initialImageUrl={initialImageUrl}
