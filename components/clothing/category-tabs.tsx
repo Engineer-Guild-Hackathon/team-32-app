@@ -28,16 +28,32 @@ export function CategoryTabs({ items, activeCategory, onCategoryChange, onDelete
 
   return (
     <Tabs value={activeCategory} onValueChange={(value) => onCategoryChange(value as ClothingCategory)}>
-      <TabsList className="grid w-full grid-cols-4 mb-6">
+      <TabsList className="grid w-full grid-cols-4 mb-4 bg-gray-100">
         {Object.entries(categoryConfig).map(([key, config]) => {
           const Icon = iconMap[config.iconName]
           const itemCount = getItemsByCategory(key as ClothingCategory).length
+          const isActive = activeCategory === key
           return (
-            <TabsTrigger key={key} value={key} className="gap-2">
+            <TabsTrigger 
+              key={key} 
+              value={key} 
+              className={`gap-1 text-sm font-medium ${
+                isActive 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
               <Icon className="w-4 h-4" />
-              {config.name}
+              <span className="hidden sm:inline">{config.name}</span>
               {itemCount > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
+                <Badge 
+                  variant="secondary" 
+                  className={`ml-1 text-xs ${
+                    isActive 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
                   {itemCount}
                 </Badge>
               )}
@@ -52,13 +68,13 @@ export function CategoryTabs({ items, activeCategory, onCategoryChange, onDelete
         
         return (
           <TabsContent key={key} value={key}>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 gap-2">
               {categoryItems.map((item) => (
                 <ItemCard key={item.id} item={item} onDelete={onDeleteItem} />
               ))}
 
               {categoryItems.length === 0 && (
-                <div className="col-span-full text-center py-12">
+                <div className="col-span-3 text-center py-12">
                   <div className="text-muted-foreground">
                     <Icon className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p className="text-lg font-medium mb-2">まだ{config.name}がありません</p>

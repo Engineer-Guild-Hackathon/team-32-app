@@ -21,9 +21,10 @@ import { categoryConfig } from "@/lib/types/clothing"
 
 interface AddItemDialogProps {
   onItemAdded: (item: ClothingItem) => void
+  children?: React.ReactNode
 }
 
-export function AddItemDialog({ onItemAdded }: AddItemDialogProps) {
+export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory>("tops")
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null)
@@ -131,10 +132,12 @@ export function AddItemDialog({ onItemAdded }: AddItemDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          アイテム追加
-        </Button>
+        {children || (
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            アイテム追加
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="max-w-md">
