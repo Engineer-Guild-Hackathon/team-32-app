@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Camera, Upload } from "lucide-react"
 import Image from "next/image"
 
-interface FaceImageUploadProps {
+interface FullBodyImageUploadProps {
   onImageSelect: (file: File | null) => void
   selectedImage: File | null
   initialImageUrl?: string | null
 }
 
-export function FaceImageUpload({ onImageSelect, selectedImage, initialImageUrl }: FaceImageUploadProps) {
+export function FullBodyImageUpload({ onImageSelect, selectedImage, initialImageUrl }: FullBodyImageUploadProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -58,17 +58,17 @@ export function FaceImageUpload({ onImageSelect, selectedImage, initialImageUrl 
             <Camera className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <CardTitle>顔写真</CardTitle>
+            <CardTitle>全身写真</CardTitle>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center gap-4">
-          <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/25">
+          <div className="relative w-48 h-64 rounded-lg overflow-hidden border-2 border-dashed border-muted-foreground/25">
             {imagePreview ? (
               <Image
                 src={imagePreview}
-                alt="Face preview"
+                alt="Full body preview"
                 fill
                 className="object-cover"
               />

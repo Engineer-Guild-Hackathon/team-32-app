@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const timestamp = Date.now()
-    const fileName = `${user.id}/face_images/${timestamp}`
+    const fileName = `${user.id}/full_body_images/${timestamp}`
 
     // Upload to Supabase Storage (private bucket)
     const { error: uploadError } = await supabase.storage
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     // Save the image path to the database
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ face_image_path: fileName })
+      .update({ full_body_image_path: fileName })
       .eq('id', user.id)
 
     if (updateError) {

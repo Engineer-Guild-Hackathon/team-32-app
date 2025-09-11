@@ -7,7 +7,7 @@ create table "public"."profiles" (
     "created_at" timestamp with time zone not null default now(),
     "personal_color" personal_color,
     "frame_type" frame_type,
-    "face_image_path" text
+    "full_body_image_path" text
 );
 
 
