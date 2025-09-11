@@ -1,9 +1,17 @@
-import { ClothingManager } from "@/components/clothing-manager"
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useClothingItems } from "@/hooks/use-clothing-items"
+import { AddItemDialog } from "@/components/clothing/add-item-dialog"
+import { CategoryTabs } from "@/components/clothing/category-tabs"
+import type { ClothingCategory } from "@/lib/types/clothing"
 
 export default function ClothingPage() {
+  const { items, addItem, deleteItem } = useClothingItems()
+  const [activeCategory, setActiveCategory] = useState<ClothingCategory>("tops")
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -21,7 +29,16 @@ export default function ClothingPage() {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <ClothingManager />
+          <div className="flex items-center justify-between mb-8">
+            <AddItemDialog onItemAdded={addItem} />
+          </div>
+
+          <CategoryTabs 
+            items={items}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+            onDeleteItem={deleteItem}
+          />
         </div>
 
         <div className="max-w-6xl mx-auto mt-8">

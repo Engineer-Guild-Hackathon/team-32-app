@@ -34,26 +34,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      items: {
+        Row: {
+          category: Database["public"]["Enums"]["item_category"]
+          created_at: string
+          id: string
+          image_path: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["item_category"]
+          created_at?: string
+          id?: string
+          image_path: string
+          user_id?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["item_category"]
+          created_at?: string
+          id?: string
+          image_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          face_image_path: string | null
           frame_type: Database["public"]["Enums"]["frame_type"] | null
           id: string
-          name: string
           personal_color: Database["public"]["Enums"]["personal_color"] | null
         }
         Insert: {
           created_at?: string
+          face_image_path?: string | null
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
           id?: string
-          name: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null
         }
         Update: {
           created_at?: string
+          face_image_path?: string | null
           frame_type?: Database["public"]["Enums"]["frame_type"] | null
           id?: string
-          name?: string
           personal_color?: Database["public"]["Enums"]["personal_color"] | null
         }
         Relationships: []
@@ -67,6 +91,7 @@ export type Database = {
     }
     Enums: {
       frame_type: "straight" | "wave" | "natural"
+      item_category: "tops" | "bottoms" | "shoes" | "accessories"
       personal_color: "spring" | "summer" | "autumn" | "winter"
     }
     CompositeTypes: {
@@ -199,6 +224,7 @@ export const Constants = {
   public: {
     Enums: {
       frame_type: ["straight", "wave", "natural"],
+      item_category: ["tops", "bottoms", "shoes", "accessories"],
       personal_color: ["spring", "summer", "autumn", "winter"],
     },
   },

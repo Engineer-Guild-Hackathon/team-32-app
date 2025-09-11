@@ -10,12 +10,21 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const fileName = `${user.id}/face`
+  // Get the face image path from the database
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('face_image_path')
+    .eq('id', user.id)
+    .single()
 
-  // Download from Supabase Storage
+  if (profileError || !profile?.face_image_path) {
+    return NextResponse.json({ error: 'No face image found' }, { status: 404 })
+  }
+
+  // Download from Supabase Storage using the path from database
   const { data, error } = await supabase.storage
-    .from('images')
-    .download(fileName)
+    .from('users')
+    .download(profile.face_image_path)
 
   if (error) {
     return NextResponse.json({ error: 'No face image found' }, { status: 404 })

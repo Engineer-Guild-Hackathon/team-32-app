@@ -5,9 +5,9 @@ create type "public"."personal_color" as enum ('spring', 'summer', 'autumn', 'wi
 create table "public"."profiles" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
-    "name" text not null,
     "personal_color" personal_color,
-    "frame_type" frame_type
+    "frame_type" frame_type,
+    "face_image_path" text
 );
 
 

@@ -18,12 +18,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Fixed path for face image
-    const fileName = `${user.id}/face`
+    const timestamp = Date.now()
+    const fileName = `${user.id}/face_images/${timestamp}`
 
     // Upload to Supabase Storage (private bucket)
     const { error: uploadError } = await supabase.storage
-      .from('images')
+      .from('users')
       .upload(fileName, file, {
         contentType: file.type,
         upsert: true
@@ -32,6 +32,17 @@ export async function POST(request: Request) {
     if (uploadError) {
       console.error('Upload error:', uploadError)
       return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+    }
+
+    // Save the image path to the database
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ face_image_path: fileName })
+      .eq('id', user.id)
+
+    if (updateError) {
+      console.error('Database update error:', updateError)
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
     }
 
     return NextResponse.json({ path: fileName })
