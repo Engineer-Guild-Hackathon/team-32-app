@@ -11,8 +11,18 @@ export interface ImageGenerationResponse {
   error?: string;
 }
 
+// サポートする画像ファイル形式を定義
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 // Helper to convert File to base64 for API
 async function fileToBase64(file: File): Promise<string> {
+  // 手順1: ファイルのMIMEタイプを検証する
+  if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    // サポートされていない形式の場合は、エラーを発生させて処理を中断する
+    throw new Error(`Unsupported file type: ${file.type}. Please use JPEG, PNG, or WebP.`);
+  }
+
+  // 手順2: 検証をパスした場合のみ、Base64への変換処理に進む
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -50,7 +60,7 @@ export async function generateClothingItemImage(
   }
 }
 
-// 着せ替え画像生成
+// 着せ替え画像生成（テキストベース）
 export async function generateDressUpImage(
   items: Array<{ name: string; color: string; brand?: string }>,
   userImage?: File
@@ -78,6 +88,38 @@ export async function generateDressUpImage(
     }
   } catch (error) {
     console.error('Error generating dress-up image:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+// 着せ替え画像生成（画像同士）
+export async function generateDressUpImageFromImages(
+  userImage: File,
+  clothingImages: string[]
+): Promise<ImageGenerationResponse> {
+  try {
+    const userImageBase64 = await fileToBase64(userImage);
+
+    const response = await fetch('/api/generate-dress-up-image-to-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userImage: userImageBase64, clothingImages }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.imageUrl) {
+      return { success: true, imageUrl: data.imageUrl };
+    } else {
+      return { success: false, error: data.error || 'Failed to generate dress-up image from API' };
+    }
+  } catch (error) {
+    console.error('Error generating dress-up image from images:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
