@@ -3,8 +3,17 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
   const { user, response } = await updateSession(request)
+  
+  const isDevelopment = process.env.NEXT_PUBLIC_ENVIRONMENT === 'dev'
+  const isRegisterPage = request.nextUrl.pathname === '/register'
+  const isAuthPage = request.nextUrl.pathname === '/login' || isRegisterPage
 
-  const isAuthPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register'
+  // 開発環境以外で/registerにアクセスした場合は/loginにリダイレクト
+  if (!isDevelopment && isRegisterPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
 
   if (!user && !isAuthPage) {
     const url = request.nextUrl.clone()
@@ -23,6 +32,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
