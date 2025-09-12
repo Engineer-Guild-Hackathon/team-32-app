@@ -65,7 +65,7 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Star className="w-5 h-5" />
-          着せ替え評価
+          Check
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

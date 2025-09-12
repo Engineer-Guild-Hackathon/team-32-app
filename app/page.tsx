@@ -61,12 +61,12 @@ export default function Home() {
               <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-violet-500 rounded-full flex items-center justify-center shadow-lg">
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
-              <CardTitle className="text-gray-800">着せ替え & 分析</CardTitle>
+              <CardTitle className="text-gray-800">Fit＆Check</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Link href="/styling">
                 <Button className="w-full bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-medium py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0">
-                  着せ替えを始める
+                  Fit＆Checkを始める
                 </Button>
               </Link>
             </CardContent>

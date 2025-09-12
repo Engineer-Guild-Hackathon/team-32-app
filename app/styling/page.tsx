@@ -65,7 +65,7 @@ export default function StylingPage() {
                 <Link href="/styling" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Sparkles className="h-4 w-4" />
-                    着せ替え＆評価
+                    Fit＆Check
                   </Button>
                 </Link>
               </div>
@@ -73,7 +73,7 @@ export default function StylingPage() {
           </Sheet>
 
           {/* タイトル */}
-          <h1 className="text-lg font-bold text-foreground">着せ替え＆評価</h1>
+          <h1 className="text-lg font-bold text-foreground">#Fit＆Check</h1>
 
           {/* 背景選択ボタン */}
           <Button 
@@ -102,13 +102,13 @@ export default function StylingPage() {
                   value="editor" 
                   className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
                 >
-                  着せ替えエディター
+                  Fit
                 </TabsTrigger>
                 <TabsTrigger 
                   value="evaluation" 
                   className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
                 >
-                  着せ替え評価
+                  Check
                 </TabsTrigger>
               </TabsList>
 

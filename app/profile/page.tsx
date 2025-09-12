@@ -61,7 +61,7 @@ export default function ProfilePage() {
                     <Link href="/styling" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start gap-2">
                         <Sparkles className="h-4 w-4" />
-                        着せ替え＆評価
+                        Fit＆Check
                       </Button>
                     </Link>
                   </div>
