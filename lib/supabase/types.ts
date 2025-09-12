@@ -82,17 +82,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_plans: {
+        Row: {
+          created_at: string
+          plan: Database["public"]["Enums"]["plan"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          plan?: Database["public"]["Enums"]["plan"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          plan?: Database["public"]["Enums"]["plan"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_user_profile_and_plan: {
+        Args: {
+          user_id: string
+          user_plan?: Database["public"]["Enums"]["plan"]
+        }
+        Returns: void
+      }
     }
     Enums: {
       frame_type: "straight" | "wave" | "natural"
       item_category: "tops" | "bottoms" | "shoes" | "accessories"
       personal_color: "spring" | "summer" | "autumn" | "winter"
+      plan: "free" | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -226,6 +251,7 @@ export const Constants = {
       frame_type: ["straight", "wave", "natural"],
       item_category: ["tops", "bottoms", "shoes", "accessories"],
       personal_color: ["spring", "summer", "autumn", "winter"],
+      plan: ["free", "pro"],
     },
   },
 } as const

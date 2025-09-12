@@ -1,17 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { signUp } from './actions'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,30 +16,10 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (authError) {
-        setError(authError.message)
-        return
-      }
-
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-          })
-
-        if (profileError) {
-          setError('プロフィールの作成に失敗しました: ' + profileError.message)
-          return
-        }
-
-        router.push('/')
-        router.refresh()
+      const result = await signUp(email, password)
+      
+      if (result?.error) {
+        setError(result.error)
       }
     } catch (err) {
       setError('登録に失敗しました')
