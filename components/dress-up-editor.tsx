@@ -8,8 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Upload,
   RotateCcw,
-  ZoomIn,
-  ZoomOut,
   Shirt,
   Package,
   Footprints,
@@ -48,7 +46,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null)
   const [selectedClothingItems, setSelectedClothingItems] = useState<ClothingItem[]>([])
   const [activeCategory, setActiveCategory] = useState<ClothingCategory>("tops")
-  const [canvasScale, setCanvasScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
   const [isGeneratingDressUp, setIsGeneratingDressUp] = useState(false)
   const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
@@ -318,62 +315,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
           </div>
 
           <div className="flex-1 p-2 flex flex-col">
-            {/* 操作ボタン */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => setCanvasScale(Math.max(0.5, canvasScale - 0.1))}>
-                <ZoomOut className="w-3 h-3" />
-              </Button>
-              <span className="text-xs text-gray-500">{Math.round(canvasScale * 100)}%</span>
-              <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => setCanvasScale(Math.min(2, canvasScale + 0.1))}>
-                <ZoomIn className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 w-6 p-0"
-                onClick={() => {
-                  setSelectedClothingItems([])
-                  setGeneratedDressUpImage(null)
-                  setUserPhoto(originalUserPhoto)
-                }}
-              >
-                <RotateCcw className="w-3 h-3" />
-              </Button>
-              {generatedDressUpImage && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 w-6 p-0"
-                  onClick={() => {
-                    setGeneratedDressUpImage(null)
-                    setUserPhoto(originalUserPhoto)
-                    setSelectedClothingItems([])
-                  }}
-                >
-                  <Sparkles className="w-3 h-3" />
-                </Button>
-              )}
-              <Button
-                size="sm"
-                className="h-6 text-xs px-2"
-                onClick={handleGenerateDressUpImage}
-                disabled={isGeneratingDressUp || selectedClothingItems.length === 0}
-              >
-                <Sparkles className="w-3 h-3 mr-1" />
-                生成
-              </Button>
-              {generatedDressUpImage && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 w-6 p-0"
-                  onClick={() => setShowEvaluation(!showEvaluation)}
-                  title="コーディネート評価"
-                >
-                  <Star className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
 
             <div className="flex-1 flex items-center justify-center">
               {isLoadingProfile ? (
@@ -400,20 +341,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                     /* 生成された画像を表示 */
                 <div className="w-full space-y-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium text-primary">✨ AI生成画像</h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-5 text-xs px-2"
-                      onClick={() => {
-                        setGeneratedDressUpImage(null)
-                        setUserPhoto(originalUserPhoto)
-                        setSelectedClothingItems([])
-                      }}
-                    >
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      元に戻る
-                    </Button>
+                        <h3 className="text-xs font-medium text-primary">✨ AI生成画像</h3>
                   </div>
                   <div
                         className="relative aspect-[3/4] border rounded overflow-hidden bg-gray-100"
@@ -443,7 +371,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                   <div
                     ref={canvasRef}
                           className="relative aspect-[3/4] border rounded overflow-hidden bg-gray-100"
-                          style={{ transform: `scale(${canvasScale})`, transformOrigin: "center" }}
                   >
                     <img
                       src={userPhotoUrl || URL.createObjectURL(userPhoto) || "/placeholder.svg"}
@@ -465,6 +392,34 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
 
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* 操作ボタン */}
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <Button
+                size="sm"
+                className="text-xs px-3 py-2"
+                onClick={handleGenerateDressUpImage}
+                disabled={isGeneratingDressUp || selectedClothingItems.length === 0}
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                生成
+              </Button>
+              {generatedDressUpImage && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs px-3 py-2"
+                  onClick={() => {
+                    setGeneratedDressUpImage(null)
+                    setUserPhoto(originalUserPhoto)
+                    setSelectedClothingItems([])
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  元に戻す
+                </Button>
               )}
             </div>
           </div>
