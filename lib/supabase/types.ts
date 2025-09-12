@@ -34,6 +34,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_usage: {
+        Row: {
+          created_at: string
+          inflight: number
+          updated_at: string
+          used: number
+          user_id: string
+          ymd: string
+        }
+        Insert: {
+          created_at?: string
+          inflight?: number
+          updated_at?: string
+          used?: number
+          user_id: string
+          ymd: string
+        }
+        Update: {
+          created_at?: string
+          inflight?: number
+          updated_at?: string
+          used?: number
+          user_id?: string
+          ymd?: string
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           category: Database["public"]["Enums"]["item_category"]
@@ -82,6 +109,33 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_requests: {
+        Row: {
+          completed_at: string | null
+          request_id: string
+          reserved_at: string
+          status: string
+          user_id: string
+          ymd: string
+        }
+        Insert: {
+          completed_at?: string | null
+          request_id: string
+          reserved_at?: string
+          status: string
+          user_id: string
+          ymd: string
+        }
+        Update: {
+          completed_at?: string | null
+          request_id?: string
+          reserved_at?: string
+          status?: string
+          user_id?: string
+          ymd?: string
+        }
+        Relationships: []
+      }
       user_plans: {
         Row: {
           created_at: string
@@ -105,12 +159,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_user_profile_and_plan: {
+      finalize_usage_failure: {
+        Args: { p_request_id: string; p_user_id: string; p_ymd: string }
+        Returns: undefined
+      }
+      finalize_usage_success: {
+        Args: { p_request_id: string; p_user_id: string; p_ymd: string }
+        Returns: undefined
+      }
+      get_usage_status: {
+        Args: { p_limit: number; p_user_id: string; p_ymd?: string }
+        Returns: {
+          can_reserve: boolean
+          inflight: number
+          remaining: number
+          used: number
+        }[]
+      }
+      reserve_usage: {
         Args: {
-          user_id: string
-          user_plan?: Database["public"]["Enums"]["plan"]
+          p_limit: number
+          p_request_id: string
+          p_user_id: string
+          p_ymd: string
         }
-        Returns: void
+        Returns: boolean
       }
     }
     Enums: {

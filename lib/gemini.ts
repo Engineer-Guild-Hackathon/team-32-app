@@ -60,40 +60,6 @@ export async function generateClothingItemImage(
   }
 }
 
-// 着せ替え画像生成（テキストベース）
-export async function generateDressUpImage(
-  items: Array<{ name: string; color: string; brand?: string }>,
-  userImage?: File
-): Promise<ImageGenerationResponse> {
-  try {
-    let userImageBase64: string | undefined;
-    if (userImage) {
-      userImageBase64 = await fileToBase64(userImage);
-    }
-
-    const response = await fetch('/api/generate-dress-up', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ items, userImage: userImageBase64 }),
-    });
-    
-    const data = await response.json();
-    
-    if (data.success && data.imageUrl) {
-      return { success: true, imageUrl: data.imageUrl };
-    } else {
-      return { success: false, error: data.error || 'Failed to generate dress-up image from API' };
-    }
-  } catch (error) {
-    console.error('Error generating dress-up image:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    };
-  }
-}
 
 // 着せ替え画像生成（画像同士）
 export async function generateDressUpImageFromImages(
