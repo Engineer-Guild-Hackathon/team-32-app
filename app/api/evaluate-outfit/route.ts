@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkUserPlan, checkProPlan } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // ユーザー認証とプラン確認
+    const planCheck = await checkUserPlan();
+    if (planCheck.error) {
+      return planCheck.error;
+    }
+
+    // freeプランの場合はAPIの利用を制限
+    const proCheck = checkProPlan(planCheck.userPlan);
+    if (proCheck) {
+      return proCheck;
+    }
+
     const { imageData } = await request.json();
     
     if (!imageData) {
