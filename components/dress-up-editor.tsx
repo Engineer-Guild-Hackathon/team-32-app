@@ -23,6 +23,7 @@ import { useClothingItems } from "@/hooks/use-clothing-items"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { OutfitEvaluationGemini } from "@/components/outfit-evaluation-gemini"
 import { useRouter } from "next/navigation"
+import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 interface PlacedItem {
   id: string
@@ -71,6 +72,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   const [showEvaluation, setShowEvaluation] = useState(false)
   const [tpo, setTpo] = useState<string>('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   // profilesテーブルからfull_body_image_pathを取得
   useEffect(() => {
@@ -129,16 +131,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     setPlacedItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
   }
 
-  const removePlacedItem = (id: string) => {
-    setPlacedItems((prev) => prev.filter((item) => item.id !== id))
-    if (selectedItem === id) {
-      setSelectedItem(null)
-    }
-
-    // 服を削除した際は、生成された画像をクリアしない
-    // 生成中も前回の画像を表示し続ける
-  }
-
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, itemId: string) => {
       e.preventDefault()
@@ -179,18 +171,10 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     [placedItems, dragOffset],
   )
 
-  const selectedPlacedItem = placedItems.find((item) => item.id === selectedItem)
-
   const getItemsByCategory = (category: ClothingCategory) => {
     const items = clothingItems.filter((item) => item.category === category)
     console.log(`カテゴリ ${category} のアイテム:`, items)
     return items
-  }
-
-  const exportOutfit = () => {
-    // In a real implementation, this would capture the canvas and save as image
-    console.log("Exporting outfit:", placedItems)
-    alert("コーディネートを保存しました！")
   }
 
   const handleGenerateDressUpImage = async () => {
@@ -199,6 +183,10 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
       return;
     }
 
+    setShowConfirmDialog(true);
+  }
+
+  const handleConfirmGenerate = async () => {
     await generateDressUpImageDirectly(placedItems);
   }
 
@@ -855,6 +843,14 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
           )}
         </div>
       </div>
+
+      <UsageConfirmationDialog
+        isOpen={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmGenerate}
+        title="AI着せ替え画像を生成しますか？"
+        description="この機能を使用すると、1回分の利用回数を消費します。"
+      />
     </div>
   )
 }

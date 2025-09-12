@@ -18,6 +18,7 @@ import { Upload, Plus, Sparkles } from "lucide-react"
 import { generateClothingItemImage } from "@/lib/gemini"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { categoryConfig } from "@/lib/types/clothing"
+import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 interface AddItemDialogProps {
   onItemAdded: (item: ClothingItem) => void
@@ -33,6 +34,7 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [generatedImageFile, setGeneratedImageFile] = useState<File | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -77,9 +79,12 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
     }
   }
 
-  const handleGenerateImage = async () => {
-    if (!aiPrompt) return
+  const handleGenerateClick = () => {
+    if (!aiPrompt) return;
+    setShowConfirmDialog(true);
+  }
 
+  const handleGenerateImage = async () => {
     setIsGenerating(true)
     try {
       const result = await generateClothingItemImage(aiPrompt)
@@ -241,7 +246,7 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
                 キャンセル
               </Button>
               {!generatedImageUrl ? (
-                <Button onClick={handleGenerateImage} className="flex-1" disabled={!aiPrompt || isGenerating}>
+                <Button onClick={handleGenerateClick} className="flex-1" disabled={!aiPrompt || isGenerating}>
                   {isGenerating ? "生成中..." : "画像を生成"}
                 </Button>
               ) : (
@@ -252,6 +257,14 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
             </div>
           </TabsContent>
         </Tabs>
+        
+        <UsageConfirmationDialog
+          isOpen={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+          onConfirm={handleGenerateImage}
+          title="アイテム画像を生成しますか？"
+          description="この機能を使用すると、1回分の利用回数を消費します。"
+        />
       </DialogContent>
     </Dialog>
   )
