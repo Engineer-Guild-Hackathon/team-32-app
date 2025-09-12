@@ -4,6 +4,7 @@ import { useState } from "react"
 import { DressUpEditor } from "@/components/dress-up-editor"
 import { OutfitEvaluator } from "@/components/outfit-evaluator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BackgroundProvider, MobilePageBackground, MobileBackgroundSelector } from "@/components/mobile-background-provider"
 import Link from "next/link"
 import { Menu, User, Shirt, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,11 +19,14 @@ import {
 
 export default function StylingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showBackgroundSelector, setShowBackgroundSelector] = useState(false)
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* スマートフォン用ヘッダー */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+    <BackgroundProvider>
+      <MobilePageBackground>
+        <main className="min-h-screen">
+          {/* スマートフォン用ヘッダー */}
+          <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b-2 border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           {/* ハンバーガーメニュー */}
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -64,32 +68,54 @@ export default function StylingPage() {
           {/* タイトル */}
           <h1 className="text-lg font-bold text-foreground">着せ替え＆評価</h1>
 
-          {/* 空のスペース */}
-          <div className="w-10"></div>
-        </div>
-      </div>
+          {/* 背景選択ボタン */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-2"
+            onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
+          </div>
+          </div>
 
-      {/* メインコンテンツ */}
-      <div className="px-4 py-4">
-        <Tabs defaultValue="editor" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100">
-            <TabsTrigger value="editor" className="text-sm font-medium">
-              着せ替えエディター
-            </TabsTrigger>
-            <TabsTrigger value="evaluation" className="text-sm font-medium">
-              着せ替え評価
-            </TabsTrigger>
-          </TabsList>
+          {/* 背景選択パネル */}
+          {showBackgroundSelector && (
+            <div className="px-4 py-2 bg-white/95 backdrop-blur-sm border-b-2 border-gray-200 shadow-sm">
+              <MobileBackgroundSelector />
+            </div>
+          )}
 
-          <TabsContent value="editor">
-            <DressUpEditor />
-          </TabsContent>
+          {/* メインコンテンツ */}
+          <div className="px-4 py-4">
+            <Tabs defaultValue="editor" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-white/95 backdrop-blur-sm border-2 border-gray-200 shadow-sm">
+                <TabsTrigger 
+                  value="editor" 
+                  className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
+                >
+                  着せ替えエディター
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="evaluation" 
+                  className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
+                >
+                  着せ替え評価
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="evaluation">
-            <OutfitEvaluator />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </main>
+              <TabsContent value="editor">
+                <DressUpEditor />
+              </TabsContent>
+
+              <TabsContent value="evaluation">
+                <OutfitEvaluator />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
+      </MobilePageBackground>
+    </BackgroundProvider>
   )
 }
