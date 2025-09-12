@@ -42,7 +42,11 @@ const categoryConfig = {
   accessories: { name: "小物", icon: Watch },
 }
 
-export function DressUpEditor() {
+interface DressUpEditorProps {
+  onImageGenerated?: (imageUrl: string) => void;
+}
+
+export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   const { items: clothingItems, isLoading } = useClothingItems()
   const router = useRouter()
 
@@ -318,6 +322,8 @@ export function DressUpEditor() {
 
       if (result.success && result.imageUrl) {
         setGeneratedDressUpImage(result.imageUrl);
+        // 親コンポーネントに生成された画像を通知
+        onImageGenerated?.(result.imageUrl);
       } else {
         alert(`着せ替え画像生成に失敗しました: ${result.error}`);
       }
