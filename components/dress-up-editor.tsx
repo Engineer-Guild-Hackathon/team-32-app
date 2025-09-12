@@ -81,7 +81,10 @@ export function DressUpEditor() {
           setUserPhotoUrl(url)
 
           // FileオブジェクトとしてもセットするためにBlobを使用
-          const file = new File([blob], 'user-photo.jpg', { type: blob.type })
+          // MIMEタイプが不明な場合はデフォルトでJPEGとして扱う
+          const mimeType = blob.type && blob.type !== 'image/*' ? blob.type : 'image/jpeg'
+          const fileName = mimeType.includes('png') ? 'user-photo.png' : 'user-photo.jpg'
+          const file = new File([blob], fileName, { type: mimeType })
           setUserPhoto(file)
           setOriginalUserPhoto(file)
         } else if (response.status === 404) {
