@@ -6,12 +6,12 @@
 
 ## チーム情報
 - チーム番号: 32
-- チーム名: （ここに記入）
-- プロダクト名: （ここに記入）
-- メンバー: （GitHubアカウントまたは名前を列挙）
+- チーム名: Fit Checkers
+- プロダクト名: Fit Check
+- メンバー: 早川雄太、廣田晃大、酒見果凛、市川大瑚
 
 ---
 
 ## デモ　/ プレゼン資料
-- デモURL: 
-- プレゼンURL：
+- デモURL: https://team-32-app.vercel.app/
+- プレゼンURL：https://docs.google.com/presentation/d/1HhPUW88cfn0O3C_qhv_rEPPDBpSXsQ2V37eykPVmO2o/edit?usp=sharing
