@@ -31,9 +31,12 @@ export async function GET() {
   }
 
   // Convert blob to response with proper headers
+  // Supabaseから取得したBlobオブジェクトには正しいMIMEタイプが含まれている
+  const headers = new Headers()
+  headers.set('Content-Type', data.type || 'image/jpeg') // フォールバックとしてimage/jpegを設定
+
+  console.log(`Successfully fetched full body image with MIME type: ${data.type}`)
   return new NextResponse(data, {
-    headers: {
-      'Content-Type': 'image/*',
-    },
+    headers: headers,
   })
 }
