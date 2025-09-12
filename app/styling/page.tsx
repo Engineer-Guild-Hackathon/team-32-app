@@ -6,7 +6,7 @@ import { OutfitEvaluator } from "@/components/outfit-evaluator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BackgroundProvider, MobilePageBackground, MobileBackgroundSelector } from "@/components/mobile-background-provider"
 import Link from "next/link"
-import { Menu, User, Shirt, Sparkles } from "lucide-react"
+import { Menu, User, Shirt, Sparkles, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -44,6 +44,12 @@ export default function StylingPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-6 space-y-2">
+                <Link href="/" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Home className="h-4 w-4" />
+                    ホーム
+                  </Button>
+                </Link>
                 <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <User className="h-4 w-4" />
