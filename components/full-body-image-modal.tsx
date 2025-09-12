@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Camera, Upload, Sparkles } from "lucide-react"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 interface FullBodyImageModalProps {
   open: boolean
@@ -26,6 +27,7 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const faceFileInputRef = useRef<HTMLInputElement>(null)
@@ -55,9 +57,12 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
     }
   }
 
-  const handleGenerateFromFace = async () => {
+  const handleGenerateClick = () => {
     if (!faceImagePreview) return;
+    setShowConfirmDialog(true);
+  }
 
+  const handleGenerateFromFace = async () => {
     setIsGenerating(true)
     setGenerationError(null)
 
@@ -228,7 +233,7 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
                   {faceImagePreview && (
                     <Button
                       type="button"
-                      onClick={handleGenerateFromFace}
+                      onClick={handleGenerateClick}
                       disabled={isGenerating}
                       className="gap-2"
                     >
@@ -270,6 +275,14 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
             </div>
           </TabsContent>
         </Tabs>
+        
+        <UsageConfirmationDialog
+          isOpen={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+          onConfirm={handleGenerateFromFace}
+          title="全身画像を生成しますか？"
+          description="この機能を使用すると、1回分の利用回数を消費します。"
+        />
       </DialogContent>
     </Dialog>
   )

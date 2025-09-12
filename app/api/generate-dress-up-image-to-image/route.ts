@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { withApiLimit } from '@/lib/with-api-limit';
 
-export async function POST(request: NextRequest) {
+async function generateDressUpImageHandler(request: NextRequest, userId: string, requestId: string) {
   try {
     const { userImage, clothingImages } = await request.json();
 
@@ -89,3 +90,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withApiLimit(generateDressUpImageHandler);

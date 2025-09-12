@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Loader2, Upload } from 'lucide-react';
 import { evaluateOutfitWithGemini } from '@/lib/gemini';
+import { UsageConfirmationDialog } from '@/components/usage-confirmation-dialog';
 
 interface OutfitEvaluatorProps {
   imageUrl?: string;
@@ -16,6 +17,7 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tpo, setTpo] = useState<string>('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   // プロパティで渡された画像URLまたはアップロードされた画像URLを使用
   const currentImageUrl = propImageUrl || uploadedImageUrl;
@@ -34,16 +36,26 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
     }
   };
 
-  const evaluateOutfit = async () => {
+  const handleEvaluateClick = () => {
     if (!currentImageUrl) {
       setError('評価する画像がありません');
       return;
     }
 
+    setShowConfirmDialog(true);
+  };
+
+  const evaluateOutfit = async () => {
     setIsEvaluating(true);
     setError(null);
     setEvaluationResult(null);
     
+    if (!currentImageUrl) {
+      setError('評価する画像がありません');
+      setIsEvaluating(false);
+      return;
+    }
+
     try {
       const result = await evaluateOutfitWithGemini(currentImageUrl, tpo || undefined);
       
@@ -117,7 +129,7 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
             </div>
             
             <Button 
-              onClick={evaluateOutfit} 
+                onClick={handleEvaluateClick} 
               disabled={isEvaluating}
               className="w-full"
             >
@@ -206,6 +218,14 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
           </div>
         )}
       </CardContent>
+
+      <UsageConfirmationDialog
+        isOpen={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={evaluateOutfit}
+        title="コーディネートを評価しますか？"
+        description="この機能を使用すると、1回分の利用回数を消費します。"
+      />
     </Card>
   );
 }

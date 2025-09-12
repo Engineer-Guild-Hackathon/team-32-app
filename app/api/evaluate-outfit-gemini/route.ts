@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { checkUserPlan, checkProPlan } from '@/lib/auth';
+import { withApiLimit } from '@/lib/with-api-limit';
 
-export async function POST(request: NextRequest) {
+async function evaluateOutfitHandler(request: NextRequest, userId: string, requestId: string) {
   try {
-    // ユーザー認証確認
-    const planCheck = await checkUserPlan();
-    if (planCheck.error) {
-      return planCheck.error;
-    }
-
-    // freeプランの場合はAPIの利用を制限
-    const proCheck = checkProPlan(planCheck.userPlan);
-    if (proCheck) {
-      return proCheck;
-    }
-
     const { imageData, tpo } = await request.json();
     
     if (!imageData) {
@@ -186,3 +174,5 @@ ${tpoContext}
     );
   }
 }
+
+export const POST = withApiLimit(evaluateOutfitHandler);
