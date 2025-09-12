@@ -4,17 +4,17 @@ import { checkUserPlan, checkProPlan } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // ユーザー認証確認（プラン制限は一時的に無効化）
-    // const planCheck = await checkUserPlan();
-    // if (planCheck.error) {
-    //   return planCheck.error;
-    // }
+    // ユーザー認証確認
+    const planCheck = await checkUserPlan();
+    if (planCheck.error) {
+      return planCheck.error;
+    }
 
-    // // freeプランの場合はAPIの利用を制限
-    // const proCheck = checkProPlan(planCheck.userPlan);
-    // if (proCheck) {
-    //   return proCheck;
-    // }
+    // freeプランの場合はAPIの利用を制限
+    const proCheck = checkProPlan(planCheck.userPlan);
+    if (proCheck) {
+      return proCheck;
+    }
 
     const { imageData, tpo } = await request.json();
     
