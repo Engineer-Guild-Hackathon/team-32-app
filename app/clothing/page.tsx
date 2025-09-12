@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, Plus, User, Shirt, Sparkles } from "lucide-react"
+import { Menu, Plus, User, Shirt, Sparkles, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useClothingItems } from "@/hooks/use-clothing-items"
 import { AddItemDialog } from "@/components/clothing/add-item-dialog"
@@ -45,6 +45,12 @@ export default function ClothingPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-6 space-y-2">
+                <Link href="/" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Home className="h-4 w-4" />
+                    ホーム
+                  </Button>
+                </Link>
                 <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <User className="h-4 w-4" />
@@ -60,7 +66,7 @@ export default function ClothingPage() {
                 <Link href="/styling" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Sparkles className="h-4 w-4" />
-                    着せ替え＆評価
+                    Fit＆Check
                   </Button>
                 </Link>
               </div>

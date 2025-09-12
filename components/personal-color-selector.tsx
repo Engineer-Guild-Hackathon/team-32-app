@@ -49,24 +49,29 @@ export function PersonalColorSelector({ value, onChange }: PersonalColorSelector
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-            <Palette className="w-5 h-5 text-primary" />
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-full flex items-center justify-center shadow-lg">
+            <Palette className="w-6 h-6 text-white" />
           </div>
           <div>
-            <CardTitle>パーソナルカラー</CardTitle>
+            <CardTitle className="text-gray-800 text-xl">パーソナルカラー</CardTitle>
+            <p className="text-gray-600 text-sm mt-1">あなたの肌色に最も似合うカラータイプを選択してください</p>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <RadioGroup value={value} onValueChange={handlePersonalColorChange}>
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             {personalColors.map((color) => (
               <div
                 key={color.id}
-                className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
+                className={`flex items-start space-x-4 p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer ${
+                  value === color.id 
+                    ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-violet-50 shadow-lg' 
+                    : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-md'
+                }`}
                 onClick={() => handlePersonalColorChange(color.id)}
               >
                 <RadioGroupItem
@@ -75,15 +80,15 @@ export function PersonalColorSelector({ value, onChange }: PersonalColorSelector
                   className="mt-1 pointer-events-none"
                 />
                 <div className="flex-1 pointer-events-none">
-                  <Label htmlFor={`color-${color.id}`} className="text-base font-medium">
+                  <Label htmlFor={`color-${color.id}`} className="text-base font-semibold text-gray-800">
                     {color.name}
                   </Label>
-                  <p className="text-sm text-muted-foreground mt-1 mb-3">{color.description}</p>
-                  <div className="flex space-x-2">
+                  <p className="text-sm text-gray-600 mt-2 mb-4 leading-relaxed">{color.description}</p>
+                  <div className="flex space-x-3">
                     {color.colors.map((colorCode, index) => (
                       <div
                         key={index}
-                        className="w-6 h-6 rounded-full border border-border"
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform duration-200"
                         style={{ backgroundColor: colorCode }}
                       />
                     ))}

@@ -6,7 +6,7 @@ import { OutfitEvaluator } from "@/components/outfit-evaluator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BackgroundProvider, MobilePageBackground, MobileBackgroundSelector } from "@/components/mobile-background-provider"
 import Link from "next/link"
-import { Menu, User, Shirt, Sparkles } from "lucide-react"
+import { Menu, User, Shirt, Sparkles, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -44,6 +44,12 @@ export default function StylingPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-6 space-y-2">
+                <Link href="/" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Home className="h-4 w-4" />
+                    ホーム
+                  </Button>
+                </Link>
                 <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <User className="h-4 w-4" />
@@ -59,7 +65,7 @@ export default function StylingPage() {
                 <Link href="/styling" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Sparkles className="h-4 w-4" />
-                    着せ替え＆評価
+                    Fit＆Check
                   </Button>
                 </Link>
               </div>
@@ -67,7 +73,7 @@ export default function StylingPage() {
           </Sheet>
 
           {/* タイトル */}
-          <h1 className="text-lg font-bold text-foreground">着せ替え＆評価</h1>
+          <h1 className="text-lg font-bold text-foreground">#Fit＆Check</h1>
 
           {/* 背景選択ボタン */}
           <Button 
@@ -96,13 +102,13 @@ export default function StylingPage() {
                   value="editor" 
                   className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
                 >
-                  着せ替えエディター
+                  Fit
                 </TabsTrigger>
                 <TabsTrigger 
                   value="evaluation" 
                   className="text-sm font-medium data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-white/70"
                 >
-                  着せ替え評価
+                  Check
                 </TabsTrigger>
               </TabsList>
 
