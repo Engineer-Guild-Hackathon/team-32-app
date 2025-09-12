@@ -308,93 +308,11 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   }
 
   return (
-    <div className="h-full flex bg-blue-50">
-      {/* メインコンテンツ - 常に横並びレイアウト */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左側：クローゼットパネル */}
-        <div className="w-1/2 border-r bg-white flex flex-col">
-          <div className="px-3 py-2 border-b">
-            <h2 className="text-sm font-bold">クローゼット</h2>
-          </div>
-
-          <div className="flex-1 overflow-hidden">
-            <Tabs value={activeCategory} onValueChange={(value) => setActiveCategory(value as ClothingCategory)} className="h-full flex flex-col">
-              <div className="px-2 py-2">
-                <TabsList className="grid w-full grid-cols-4 bg-gray-100 h-8">
-                  {Object.entries(categoryConfig).map(([key, config]) => {
-                    const Icon = config.icon
-                    return (
-                      <TabsTrigger key={key} value={key} className="text-xs gap-1 h-6">
-                        <Icon className="w-3 h-3" />
-                      </TabsTrigger>
-                    )
-                  })}
-                </TabsList>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-2 pb-2">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-500">読み込み中...</p>
-                    </div>
-                  </div>
-                ) : (
-                  Object.entries(categoryConfig).map(([key, config]) => (
-                    <TabsContent key={key} value={key} className="h-full">
-                      <div className="grid grid-cols-2 gap-1">
-                        {getItemsByCategory(key as ClothingCategory).length === 0 ? (
-                          <div className="col-span-2 flex items-center justify-center h-32 text-center">
-                            <div>
-                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-500">アイテムがありません</p>
-                              <p className="text-xs text-gray-400">服登録ページでアイテムを追加してください</p>
-                            </div>
-                          </div>
-                        ) : (
-                          getItemsByCategory(key as ClothingCategory).map((item) => (
-                            <div
-                              key={item.id}
-                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none active:scale-95 active:bg-accent/70 ${selectedClothingItems.find(selected => selected.id === item.id) ? 'ring-2 ring-primary bg-primary/10' : ''
-                                }`}
-                              onClick={() => toggleClothingSelection(item)}
-                            >
-                              <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden">
-                                {item.imageUrl ? (
-                                  <img
-                                    src={item.imageUrl}
-                                    alt={`アイテム ${item.id.slice(-4)}`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      console.error('画像の読み込みに失敗しました:', item.imageUrl);
-                                      e.currentTarget.style.display = 'none';
-                                    }}
-                                    onLoad={() => {
-                                      console.log('画像の読み込みに成功しました:', item.imageUrl);
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="flex flex-col items-center justify-center">
-                                    <Upload className="w-4 h-4 text-gray-400 mb-1" />
-                                    <span className="text-xs text-gray-500">画像なし</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </TabsContent>
-                  ))
-                )}
-              </div>
-            </Tabs>
-          </div>
-        </div>
-
-        {/* 右側：着せ替えキャンバス */}
-        <div className="w-1/2 bg-white flex flex-col">
+    <div className="h-full flex flex-col bg-blue-50">
+      {/* メインコンテンツ - 縦並びレイアウト */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* 上部：着せ替えキャンバス */}
+        <div className="flex-1 bg-white flex flex-col border-b">
           <div className="px-3 py-2 border-b">
             <h2 className="text-sm font-bold">キャンバス</h2>
           </div>
@@ -579,6 +497,89 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
               />
             </div>
           )}
+        </div>
+
+        {/* 下部：クローゼットパネル */}
+        <div className="h-80 border-t bg-white flex flex-col">
+          <div className="px-3 py-2 border-b">
+            <h2 className="text-sm font-bold">クローゼット</h2>
+          </div>
+
+          <div className="flex-1 overflow-hidden">
+            <Tabs value={activeCategory} onValueChange={(value) => setActiveCategory(value as ClothingCategory)} className="h-full flex flex-col">
+              <div className="px-2 py-2">
+                <TabsList className="grid w-full grid-cols-4 bg-gray-100 h-8">
+                  {Object.entries(categoryConfig).map(([key, config]) => {
+                    const Icon = config.icon
+                    return (
+                      <TabsTrigger key={key} value={key} className="text-xs gap-1 h-6">
+                        <Icon className="w-3 h-3" />
+                      </TabsTrigger>
+                    )
+                  })}
+                </TabsList>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-2 pb-2">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">読み込み中...</p>
+                    </div>
+                  </div>
+                ) : (
+                  Object.entries(categoryConfig).map(([key, config]) => (
+                    <TabsContent key={key} value={key} className="h-full">
+                      <div className="grid grid-cols-4 gap-2">
+                        {getItemsByCategory(key as ClothingCategory).length === 0 ? (
+                          <div className="col-span-4 flex items-center justify-center h-32 text-center">
+                            <div>
+                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">アイテムがありません</p>
+                              <p className="text-xs text-gray-400">服登録ページでアイテムを追加してください</p>
+                            </div>
+                          </div>
+                        ) : (
+                          getItemsByCategory(key as ClothingCategory).map((item) => (
+                            <div
+                              key={item.id}
+                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none active:scale-95 active:bg-accent/70 ${
+                                selectedClothingItems.find(selected => selected.id === item.id) ? 'ring-2 ring-primary bg-primary/10' : ''
+                              }`}
+                              onClick={() => toggleClothingSelection(item)}
+                            >
+                              <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={`アイテム ${item.id.slice(-4)}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      console.error('画像の読み込みに失敗しました:', item.imageUrl);
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                    onLoad={() => {
+                                      console.log('画像の読み込みに成功しました:', item.imageUrl);
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center">
+                                    <Upload className="w-4 h-4 text-gray-400 mb-1" />
+                                    <span className="text-xs text-gray-500">画像なし</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </TabsContent>
+                  ))
+                )}
+              </div>
+            </Tabs>
+          </div>
         </div>
       </div>
 
