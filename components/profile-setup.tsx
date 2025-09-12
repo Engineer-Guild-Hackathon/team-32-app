@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { FullBodyImageUpload } from "@/components/full-body-image-upload"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FullBodyImageModal } from "@/components/full-body-image-modal"
 import { FrameTypeSelector } from "@/components/frame-type-selector"
 import { PersonalColorSelector } from "@/components/personal-color-selector"
+import { Camera, Upload } from "lucide-react"
+import Image from "next/image"
 
 type FrameType = "straight" | "wave" | "natural" | ""
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
@@ -16,15 +18,13 @@ interface ProfileData {
 }
 
 export function ProfileSetup() {
-  const router = useRouter()
   const [profileData, setProfileData] = useState<ProfileData>({
     frameType: "",
     personalColor: "",
   })
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [initialImageUrl, setInitialImageUrl] = useState<string | null>(null)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -48,7 +48,7 @@ export function ProfileSetup() {
           const imageBlob = await imageResponse.blob()
           imageUrl = URL.createObjectURL(imageBlob)
           console.log('Full body image loaded:', imageUrl)
-          setInitialImageUrl(imageUrl)
+          setCurrentImageUrl(imageUrl)
         } else if (!imageResponse.ok) {
           console.log('No full body image found (404 expected):', imageResponse.status)
         }
@@ -72,65 +72,65 @@ export function ProfileSetup() {
     }
   }, [])
 
-  const handleComplete = async () => {
-    setIsSaving(true)
+  const handleImageSave = async (file: File) => {
     try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const uploadResponse = await fetch('/api/upload-full-body', {
+        method: 'POST',
+        body: formData,
+      })
 
-      // Upload image if selected
-      if (selectedImage) {
-        const formData = new FormData()
-        formData.append('file', selectedImage)
-        
-        const uploadResponse = await fetch('/api/upload-full-body', {
-          method: 'POST',
-          body: formData,
-        })
-
-        if (!uploadResponse.ok) {
-          console.error('Failed to upload image')
-          alert('画像のアップロードに失敗しました')
-          setIsSaving(false)
-          return
-        }
+      if (!uploadResponse.ok) {
+        console.error('Failed to upload image')
+        alert('画像のアップロードに失敗しました')
+        return
       }
 
+      // Reload the image
+      const imageResponse = await fetch('/api/full-body-image')
+      if (imageResponse.ok) {
+        const imageBlob = await imageResponse.blob()
+        const imageUrl = URL.createObjectURL(imageBlob)
+        setCurrentImageUrl(imageUrl)
+      }
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      alert('画像のアップロードに失敗しました')
+    }
+  }
+
+  const saveProfileData = async (data: Partial<ProfileData>) => {
+    try {
       const response = await fetch('/api/profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          personal_color: profileData.personalColor || null,
-          frame_type: profileData.frameType || null,
+          personal_color: data.personalColor !== undefined ? data.personalColor || null : profileData.personalColor || null,
+          frame_type: data.frameType !== undefined ? data.frameType || null : profileData.frameType || null,
         }),
       })
       
-      if (response.ok) {
-        console.log("Profile saved successfully")
-        router.push("/")
-      } else {
+      if (!response.ok) {
         const error = await response.json()
         console.error('Failed to save profile:', error)
-        alert('プロフィールの保存に失敗しました')
       }
     } catch (error) {
       console.error('Failed to save profile:', error)
-      alert('プロフィールの保存に失敗しました')
-    } finally {
-      setIsSaving(false)
     }
   }
 
-  const handleFrameTypeChange = (value: FrameType) => {
+  const handleFrameTypeChange = async (value: FrameType) => {
     setProfileData((prev) => ({ ...prev, frameType: value }))
+    await saveProfileData({ frameType: value })
   }
 
-  const handlePersonalColorChange = (value: PersonalColor) => {
+  const handlePersonalColorChange = async (value: PersonalColor) => {
     setProfileData((prev) => ({ ...prev, personalColor: value }))
-  }
-
-  const handleImageSelect = (file: File | null) => {
-    setSelectedImage(file)
+    await saveProfileData({ personalColor: value })
   }
 
   if (isLoading) {
@@ -143,11 +143,45 @@ export function ProfileSetup() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <FullBodyImageUpload 
-        onImageSelect={handleImageSelect}
-        selectedImage={selectedImage}
-        initialImageUrl={initialImageUrl}
-      />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Camera className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>全身写真</CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-48 h-64 rounded-lg overflow-hidden border-2 border-dashed border-muted-foreground/25">
+              {currentImageUrl ? (
+                <Image
+                  src={currentImageUrl}
+                  alt="Full body preview"
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModalOpen(true)}
+              className="gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              {currentImageUrl ? '写真を変更' : '写真を登録'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <FrameTypeSelector
         value={profileData.frameType}
@@ -159,16 +193,11 @@ export function ProfileSetup() {
         onChange={handlePersonalColorChange}
       />
 
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleComplete} 
-          size="lg" 
-          className="min-w-[200px]"
-          disabled={isSaving}
-        >
-          {isSaving ? '保存中...' : '保存'}
-        </Button>
-      </div>
+      <FullBodyImageModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSave={handleImageSave}
+      />
     </div>
   )
 }
