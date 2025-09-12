@@ -20,6 +20,7 @@ import {
 export default function StylingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showBackgroundSelector, setShowBackgroundSelector] = useState(false)
+  const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
 
   return (
     <BackgroundProvider>
@@ -106,11 +107,11 @@ export default function StylingPage() {
               </TabsList>
 
               <TabsContent value="editor">
-                <DressUpEditor />
+                <DressUpEditor onImageGenerated={setGeneratedDressUpImage} />
               </TabsContent>
 
               <TabsContent value="evaluation">
-                <OutfitEvaluator />
+                <OutfitEvaluator imageUrl={generatedDressUpImage || undefined} />
               </TabsContent>
             </Tabs>
           </div>
