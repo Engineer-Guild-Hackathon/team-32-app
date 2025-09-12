@@ -13,5 +13,5 @@
 ---
 
 ## デモ　/ プレゼン資料
-- デモURL: https://team-32-app.vercel.app/
-- プレゼンURL：https://docs.google.com/presentation/d/1HhPUW88cfn0O3C_qhv_rEPPDBpSXsQ2V37eykPVmO2o/edit?usp=sharing
+- デモURL: [https://fitcheck-learn.vercel.app/](https://fitcheck-learn.vercel.app/)
+- プレゼンURL：[https://docs.google.com/presentation/d/1HhPUW88cfn0O3C_qhv_rEPPDBpSXsQ2V37eykPVmO2o/edit?usp=sharing](https://docs.google.com/presentation/d/1HhPUW88cfn0O3C_qhv_rEPPDBpSXsQ2V37eykPVmO2o/edit?usp=sharing)
