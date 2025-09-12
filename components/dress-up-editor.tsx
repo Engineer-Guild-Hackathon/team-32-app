@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -25,16 +25,6 @@ import { OutfitEvaluationGemini } from "@/components/outfit-evaluation-gemini"
 import { useRouter } from "next/navigation"
 import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
-interface PlacedItem {
-  id: string
-  clothingId: string
-  x: number
-  y: number
-  scale: number
-  rotation: number
-  visible: boolean
-  item: ClothingItem
-}
 
 const categoryConfig = {
   tops: { name: "トップス", icon: Shirt },
@@ -56,19 +46,13 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   console.log('DressUpEditor - isLoading:', isLoading)
   const [userPhoto, setUserPhoto] = useState<File | null>(null)
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null)
-  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([])
-  const [selectedItem, setSelectedItem] = useState<string | null>(null)
+  const [selectedClothingItems, setSelectedClothingItems] = useState<ClothingItem[]>([])
   const [activeCategory, setActiveCategory] = useState<ClothingCategory>("tops")
   const [canvasScale, setCanvasScale] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isGeneratingDressUp, setIsGeneratingDressUp] = useState(false)
   const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
   const [originalUserPhoto, setOriginalUserPhoto] = useState<File | null>(null)
-  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
-  const [isTouchDragging, setIsTouchDragging] = useState(false)
   const [showEvaluation, setShowEvaluation] = useState(false)
   const [tpo, setTpo] = useState<string>('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
@@ -109,67 +93,18 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     loadUserPhoto()
   }, [])
 
-  const addClothingItem = (item: ClothingItem) => {
-    const newPlacedItem: PlacedItem = {
-      id: `placed-${Date.now()}`,
-      clothingId: item.id,
-      x: 200,
-      y: 200,
-      scale: 1,
-      rotation: 0,
-      visible: true,
-      item,
-    }
-    setPlacedItems((prev) => [...prev, newPlacedItem])
-    setSelectedItem(newPlacedItem.id)
-
-    // 新しい服を追加した際は、生成された画像をクリアしない
-    // 生成中も前回の画像を表示し続ける
+  const toggleClothingSelection = (item: ClothingItem) => {
+    setSelectedClothingItems((prev) => {
+      const exists = prev.find(selected => selected.id === item.id)
+      if (exists) {
+        return prev.filter(selected => selected.id !== item.id)
+      } else {
+        return [...prev, item]
+      }
+    })
   }
 
-  const updatePlacedItem = (id: string, updates: Partial<PlacedItem>) => {
-    setPlacedItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
-  }
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, itemId: string) => {
-      e.preventDefault()
-      setSelectedItem(itemId)
-
-      const item = placedItems.find((p) => p.id === itemId)
-      if (!item) return
-
-      const rect = canvasRef.current?.getBoundingClientRect()
-      if (!rect) return
-
-      const startX = e.clientX - rect.left
-      const startY = e.clientY - rect.top
-
-      setDragOffset({
-        x: startX - item.x,
-        y: startY - item.y,
-      })
-
-      const handleMouseMove = (e: MouseEvent) => {
-        const rect = canvasRef.current?.getBoundingClientRect()
-        if (!rect) return
-
-        const x = e.clientX - rect.left - dragOffset.x
-        const y = e.clientY - rect.top - dragOffset.y
-
-        updatePlacedItem(itemId, { x, y })
-      }
-
-      const handleMouseUp = () => {
-        document.removeEventListener("mousemove", handleMouseMove)
-        document.removeEventListener("mouseup", handleMouseUp)
-      }
-
-      document.addEventListener("mousemove", handleMouseMove)
-      document.addEventListener("mouseup", handleMouseUp)
-    },
-    [placedItems, dragOffset],
-  )
 
   const getItemsByCategory = (category: ClothingCategory) => {
     const items = clothingItems.filter((item) => item.category === category)
@@ -178,8 +113,8 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   }
 
   const handleGenerateDressUpImage = async () => {
-    if (placedItems.length === 0) {
-      alert('着せ替えアイテムを追加してください');
+    if (selectedClothingItems.length === 0) {
+      alert('着せ替えアイテムを選択してください');
       return;
     }
 
@@ -187,11 +122,11 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   }
 
   const handleConfirmGenerate = async () => {
-    await generateDressUpImageDirectly(placedItems);
+    await generateDressUpImageDirectly(selectedClothingItems);
   }
 
-  const generateDressUpImageDirectly = async (itemsToGenerate: PlacedItem[]) => {
-    if (itemsToGenerate.length === 0) {
+  const generateDressUpImageDirectly = async (clothingItems: ClothingItem[]) => {
+    if (clothingItems.length === 0) {
       console.log('No items to generate');
       return;
     }
@@ -202,8 +137,8 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     }
 
     // 服の画像URLを事前に検証
-    const clothingImageUrls = itemsToGenerate
-      .map(placedItem => placedItem.item.imageUrl)
+    const clothingImageUrls = clothingItems
+      .map(item => item.imageUrl)
       .filter((url): url is string => url !== undefined && url.trim() !== '');
 
     if (clothingImageUrls.length === 0) {
@@ -372,151 +307,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     }
   }
 
-  // ドラッグ&ドロップ関連のハンドラー
-  const handleDragStart = (e: React.DragEvent, item: ClothingItem) => {
-    e.dataTransfer.setData('clothing-item', JSON.stringify(item))
-    e.dataTransfer.effectAllowed = 'copy'
-    setIsDragging(true)
-
-    // ドラッグ中の視覚的フィードバックを改善
-    if (e.dataTransfer.setDragImage) {
-      const dragImage = e.currentTarget.cloneNode(true) as HTMLElement
-      dragImage.style.transform = 'rotate(5deg)'
-      dragImage.style.opacity = '0.8'
-      document.body.appendChild(dragImage)
-      e.dataTransfer.setDragImage(dragImage, 50, 50)
-      setTimeout(() => document.body.removeChild(dragImage), 0)
-    }
-  }
-
-  const handleDragEnd = () => {
-    setIsDragging(false)
-    setIsDragOver(false)
-  }
-
-  // タッチデバイス対応のハンドラー
-  const handleTouchStart = (e: React.TouchEvent, item: ClothingItem) => {
-    // スマホでのスクロールを妨げないように、preventDefaultは最小限に
-    const touch = e.touches[0]
-    setTouchStartPos({ x: touch.clientX, y: touch.clientY })
-    setIsTouchDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartPos || !isTouchDragging) return
-
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStartPos.x
-    const deltaY = touch.clientY - touchStartPos.y
-
-    // 一定距離以上移動した場合のみドラッグとみなす
-    if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
-      // ドラッグ中はスクロールを防止
-      e.preventDefault()
-      // タッチドラッグの視覚的フィードバック
-      document.body.style.cursor = 'grabbing'
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent, item: ClothingItem) => {
-    if (!touchStartPos || !isTouchDragging) return
-
-    e.preventDefault()
-    const touch = e.changedTouches[0]
-    const deltaX = touch.clientX - touchStartPos.x
-    const deltaY = touch.clientY - touchStartPos.y
-
-    // タップとドラッグを区別（移動距離が小さい場合はタップとして処理）
-    if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
-      // タップ: アイテムを追加
-      addClothingItem(item)
-    } else {
-      // ドラッグ: キャンバス上にドロップされたかチェック
-      const canvasElement = canvasRef.current
-      if (canvasElement) {
-        const rect = canvasElement.getBoundingClientRect()
-        const isOverCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
-          touch.clientY >= rect.top && touch.clientY <= rect.bottom
-
-        if (isOverCanvas) {
-          // キャンバス上にドロップされた場合
-          addClothingItem(item)
-          // 自動的に画像生成を実行
-          setTimeout(async () => {
-            try {
-              const newPlacedItems = [...placedItems, {
-                id: `placed-${Date.now()}`,
-                clothingId: item.id,
-                x: 200,
-                y: 200,
-                scale: 1,
-                rotation: 0,
-                visible: true,
-                item,
-              }]
-              await generateDressUpImageDirectly(newPlacedItems)
-            } catch (error) {
-              console.error('Error in auto-generation after touch drop:', error)
-            }
-          }, 100)
-        }
-      }
-    }
-
-    setTouchStartPos(null)
-    setIsTouchDragging(false)
-    document.body.style.cursor = ''
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-
-    try {
-      const clothingData = e.dataTransfer.getData('clothing-item')
-      if (clothingData) {
-        const item = JSON.parse(clothingData)
-        addClothingItem(item)
-
-        // 服を追加した後、自動的に画像生成を実行
-        // placedItemsの更新を待つために、新しい配列を作成してから生成
-        const newPlacedItems = [...placedItems, {
-          id: `placed-${Date.now()}`,
-          clothingId: item.id,
-          x: 200,
-          y: 200,
-          scale: 1,
-          rotation: 0,
-          visible: true,
-          item,
-        }]
-
-        setTimeout(async () => {
-          try {
-            await generateDressUpImageDirectly(newPlacedItems)
-          } catch (error) {
-            console.error('Error in auto-generation after drop:', error)
-            alert('画像生成中にエラーが発生しました。手動で「AIで着せ替え画像生成」ボタンを押してください。')
-          }
-        }, 500)
-      }
-    } catch (error) {
-      console.error('Error in handleDrop:', error)
-      alert('ドロップ処理中にエラーが発生しました')
-    }
-  }
-
   return (
     <div className="h-full flex bg-blue-50">
       {/* メインコンテンツ - 常に横並びレイアウト */}
@@ -566,15 +356,9 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                           getItemsByCategory(key as ClothingCategory).map((item) => (
                             <div
                               key={item.id}
-                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none ${isDragging || isTouchDragging ? 'opacity-50 scale-95' : ''
-                                } active:scale-95 active:bg-accent/70`}
-                              onClick={() => addClothingItem(item)}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, item)}
-                              onDragEnd={handleDragEnd}
-                              onTouchStart={(e) => handleTouchStart(e, item)}
-                              onTouchMove={handleTouchMove}
-                              onTouchEnd={(e) => handleTouchEnd(e, item)}
+                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none active:scale-95 active:bg-accent/70 ${selectedClothingItems.find(selected => selected.id === item.id) ? 'ring-2 ring-primary bg-primary/10' : ''
+                                }`}
+                              onClick={() => toggleClothingSelection(item)}
                             >
                               <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden">
                                 {item.imageUrl ? (
@@ -630,7 +414,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                 variant="outline"
                 className="h-6 w-6 p-0"
                 onClick={() => {
-                  setPlacedItems([])
+                  setSelectedClothingItems([])
                   setGeneratedDressUpImage(null)
                   setUserPhoto(originalUserPhoto)
                 }}
@@ -645,7 +429,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                   onClick={() => {
                     setGeneratedDressUpImage(null)
                     setUserPhoto(originalUserPhoto)
-                    setPlacedItems([])
+                    setSelectedClothingItems([])
                   }}
                 >
                   <Sparkles className="w-3 h-3" />
@@ -653,11 +437,12 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
               )}
               <Button
                 size="sm"
-                className="h-6 w-6 p-0"
+                className="h-6 text-xs px-2"
                 onClick={handleGenerateDressUpImage}
-                disabled={isGeneratingDressUp || placedItems.length === 0}
+                disabled={isGeneratingDressUp || selectedClothingItems.length === 0}
               >
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-3 h-3 mr-1" />
+                生成
               </Button>
               {generatedDressUpImage && (
                 <Button
@@ -694,7 +479,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                   </Button>
                 </div>
               ) : generatedDressUpImage ? (
-                /* 生成された画像を表示（ドラッグ&ドロップ機能付き） */
+                    /* 生成された画像を表示 */
                 <div className="w-full space-y-1">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-medium text-primary">✨ AI生成画像</h3>
@@ -705,7 +490,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                       onClick={() => {
                         setGeneratedDressUpImage(null)
                         setUserPhoto(originalUserPhoto)
-                        setPlacedItems([])
+                        setSelectedClothingItems([])
                       }}
                     >
                       <Sparkles className="w-3 h-3 mr-1" />
@@ -713,11 +498,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                     </Button>
                   </div>
                   <div
-                    className={`relative aspect-[3/4] border rounded overflow-hidden bg-gray-100 transition-all duration-200 ${isDragOver ? 'border-primary border-2 bg-primary/5 scale-105' : ''
-                      }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
+                        className="relative aspect-[3/4] border rounded overflow-hidden bg-gray-100"
                   >
                     <img
                       src={generatedDressUpImage}
@@ -736,29 +517,15 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                       </div>
                     )}
 
-                    {/* ドロップ時のオーバーレイ */}
-                    {isDragOver && !isGeneratingDressUp && (
-                      <div className="absolute inset-0 bg-primary/20 border-2 border-primary border-dashed flex items-center justify-center">
-                        <div className="text-center text-primary">
-                          <Sparkles className="w-6 h-6 mx-auto mb-1" />
-                          <p className="text-xs font-medium">ここに服をドロップ</p>
-                          <p className="text-xs opacity-80">新しい着せ替え画像を生成します</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               ) : (
-                /* 元の画像とドラッグ&ドロップ機能を表示 */
+                      /* 元の画像を表示 */
                 <div className="w-full">
                   <div
                     ref={canvasRef}
-                    className={`relative aspect-[3/4] border rounded overflow-hidden bg-gray-100 transition-all duration-200 ${isDragOver ? 'border-primary border-2 bg-primary/5 scale-105' : ''
-                      }`}
-                    style={{ transform: `scale(${canvasScale})`, transformOrigin: "center" }}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
+                          className="relative aspect-[3/4] border rounded overflow-hidden bg-gray-100"
+                          style={{ transform: `scale(${canvasScale})`, transformOrigin: "center" }}
                   >
                     <img
                       src={userPhotoUrl || URL.createObjectURL(userPhoto) || "/placeholder.svg"}
@@ -777,36 +544,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                       </div>
                     )}
 
-                    {/* ドロップ時のオーバーレイ */}
-                    {isDragOver && !isGeneratingDressUp && (
-                      <div className="absolute inset-0 bg-primary/20 border-2 border-primary border-dashed flex items-center justify-center">
-                        <div className="text-center text-primary">
-                          <Sparkles className="w-6 h-6 mx-auto mb-1" />
-                          <p className="text-xs font-medium">ここに服をドロップ</p>
-                          <p className="text-xs opacity-80">着せ替え画像を生成します</p>
-                        </div>
-                      </div>
-                    )}
 
-                    {placedItems
-                      .filter((item) => item.visible)
-                      .map((placedItem) => (
-                        <div
-                          key={placedItem.id}
-                          className={`absolute cursor-move select-none ${selectedItem === placedItem.id ? "ring-2 ring-primary" : ""
-                            }`}
-                          style={{
-                            left: placedItem.x,
-                            top: placedItem.y,
-                            transform: `scale(${placedItem.scale}) rotate(${placedItem.rotation}deg)`,
-                          }}
-                          onMouseDown={(e) => handleMouseDown(e, placedItem.id)}
-                        >
-                          <div className="w-12 h-12 bg-primary/20 border-2 border-primary/50 rounded flex items-center justify-center">
-                            <span className="text-xs text-center px-1">アイテム {placedItem.item.id.slice(-4)}</span>
-                          </div>
-                        </div>
-                      ))}
                   </div>
                 </div>
               )}
