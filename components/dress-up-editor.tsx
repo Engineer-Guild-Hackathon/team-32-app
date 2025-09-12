@@ -2,27 +2,25 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Upload,
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Trash2,
-  Save,
   Shirt,
   Package,
   Footprints,
   Watch,
   Sparkles,
+  User,
 } from "lucide-react"
 import { generateDressUpImageFromImages } from "@/lib/gemini"
 import { useClothingItems } from "@/hooks/use-clothing-items"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
+import { useRouter } from "next/navigation"
 
 interface PlacedItem {
   id: string
@@ -44,11 +42,13 @@ const categoryConfig = {
 
 export function DressUpEditor() {
   const { items: clothingItems, isLoading } = useClothingItems()
+  const router = useRouter()
   
   // デバッグ用ログ
   console.log('DressUpEditor - clothingItems:', clothingItems)
   console.log('DressUpEditor - isLoading:', isLoading)
   const [userPhoto, setUserPhoto] = useState<File | null>(null)
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null)
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([])
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState<ClothingCategory>("tops")
@@ -62,14 +62,39 @@ export function DressUpEditor() {
   const [originalUserPhoto, setOriginalUserPhoto] = useState<File | null>(null)
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [isTouchDragging, setIsTouchDragging] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setUserPhoto(file)
-      setOriginalUserPhoto(file) // 元の写真も保存
+  // profilesテーブルからfull_body_image_pathを取得
+  useEffect(() => {
+    const loadUserPhoto = async () => {
+      try {
+        // APIルートを使用して全身画像を取得
+        const response = await fetch('/api/full-body-image')
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = URL.createObjectURL(blob)
+          setUserPhotoUrl(url)
+          
+          // FileオブジェクトとしてもセットするためにBlobを使用
+          const file = new File([blob], 'user-photo.jpg', { type: blob.type })
+          setUserPhoto(file)
+          setOriginalUserPhoto(file)
+        } else if (response.status === 404) {
+          // 画像が見つからない場合は何もしない（プロフィールへの誘導を表示）
+          console.log('No full body image found in profile')
+        } else {
+          console.error('Failed to fetch full body image:', response.status)
+        }
+      } catch (error) {
+        console.error('Error loading user photo:', error)
+      } finally {
+        setIsLoadingProfile(false)
+      }
     }
-  }
+
+    loadUserPhoto()
+  }, [])
 
   const addClothingItem = (item: ClothingItem) => {
     const newPlacedItem: PlacedItem = {
@@ -637,14 +662,25 @@ export function DressUpEditor() {
             </div>
             
             <div className="flex-1 flex items-center justify-center">
-              {!userPhoto ? (
+              {isLoadingProfile ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-500">プロフィール画像を読み込み中...</p>
+                  </div>
+                </div>
+              ) : !userPhoto ? (
                 <div className="aspect-[3/4] w-full border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} className="hidden" id="user-photo" />
-                  <label htmlFor="user-photo" className="cursor-pointer text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm font-medium mb-1">写真をアップロード</p>
-                    <p className="text-xs text-gray-500">着せ替えに使用する写真を選択してください</p>
-                  </label>
+                    <User className="w-12 h-12 text-gray-400 mb-3" />
+                    <p className="text-sm font-medium mb-3">写真が登録されていません</p>
+                    <p className="text-xs text-gray-500 mb-4">プロフィールページで写真を登録してください</p>
+                    <Button
+                      onClick={() => router.push('/profile')}
+                      className="gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      プロフィールへ移動
+                    </Button>
                 </div>
               ) : generatedDressUpImage ? (
                 /* 生成された画像を表示（ドラッグ&ドロップ機能付き） */
@@ -716,7 +752,7 @@ export function DressUpEditor() {
                     onDrop={handleDrop}
                   >
                     <img
-                      src={URL.createObjectURL(userPhoto) || "/placeholder.svg"}
+                            src={userPhotoUrl || URL.createObjectURL(userPhoto) || "/placeholder.svg"}
                       alt="User"
                       className="w-full h-full object-cover"
                     />
