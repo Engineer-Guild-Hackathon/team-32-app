@@ -152,20 +152,21 @@ export function ProfileSetup() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Camera className="w-5 h-5 text-primary" />
+      <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
+              <Camera className="w-6 h-6 text-white" />
             </div>
             <div>
-              <CardTitle>全身写真</CardTitle>
+              <CardTitle className="text-gray-800 text-xl">全身写真</CardTitle>
+              <p className="text-gray-600 text-sm mt-1">あなたの全身を写した写真をアップロードしてください</p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-48 h-64 rounded-lg overflow-hidden border-2 border-dashed border-muted-foreground/25">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative w-56 h-72 rounded-2xl overflow-hidden border-4 border-dashed border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50">
               {currentImageUrl ? (
                 <Image
                   src={currentImageUrl}
@@ -174,8 +175,11 @@ export function ProfileSetup() {
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <Camera className="w-8 h-8 text-muted-foreground" />
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                  <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-400 rounded-full flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-gray-500 text-sm font-medium">写真をアップロード</p>
                 </div>
               )}
             </div>
@@ -183,7 +187,7 @@ export function ProfileSetup() {
               type="button"
               variant="outline"
               onClick={() => setModalOpen(true)}
-              className="gap-2"
+              className="gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <Upload className="w-4 h-4" />
               {currentImageUrl ? '写真を変更' : '写真を登録'}
