@@ -181,7 +181,7 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
             <div>
               <Label htmlFor="photo">写真 *</Label>
               <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
-                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="item-photo" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} className="hidden" id="item-photo" />
                 <label htmlFor="item-photo" className="cursor-pointer">
                   <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm">{selectedPhoto ? selectedPhoto.name : "クリックして写真を選択"}</p>

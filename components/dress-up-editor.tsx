@@ -20,20 +20,9 @@ import {
   Watch,
   Sparkles,
 } from "lucide-react"
-import { generateDressUpImage } from "@/lib/gemini"
-
-type ClothingCategory = "tops" | "bottoms" | "shoes" | "accessories"
-
-interface ClothingItem {
-  id: string
-  name: string
-  category: ClothingCategory
-  color: string
-  brand?: string
-  photo?: File
-  generatedImageUrl?: string
-  tags: string[]
-}
+import { generateDressUpImageFromImages } from "@/lib/gemini"
+import { useClothingItems } from "@/hooks/use-clothing-items"
+import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 
 interface PlacedItem {
   id: string
@@ -53,43 +42,12 @@ const categoryConfig = {
   accessories: { name: "小物", icon: Watch },
 }
 
-// Mock data for demonstration
-const mockClothingItems: ClothingItem[] = [
-  {
-    id: "1",
-    name: "白いシャツ",
-    category: "tops",
-    color: "ホワイト",
-    brand: "UNIQLO",
-    tags: ["カジュアル", "オフィス"],
-  },
-  {
-    id: "2",
-    name: "デニムパンツ",
-    category: "bottoms",
-    color: "ブルー",
-    brand: "Levi's",
-    tags: ["カジュアル"],
-  },
-  {
-    id: "3",
-    name: "スニーカー",
-    category: "shoes",
-    color: "ホワイト",
-    brand: "Nike",
-    tags: ["スポーツ", "カジュアル"],
-  },
-  {
-    id: "4",
-    name: "レザーバッグ",
-    category: "accessories",
-    color: "ブラック",
-    brand: "Coach",
-    tags: ["フォーマル", "ビジネス"],
-  },
-]
-
 export function DressUpEditor() {
+  const { items: clothingItems, isLoading } = useClothingItems()
+  
+  // デバッグ用ログ
+  console.log('DressUpEditor - clothingItems:', clothingItems)
+  console.log('DressUpEditor - isLoading:', isLoading)
   const [userPhoto, setUserPhoto] = useState<File | null>(null)
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([])
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
@@ -102,6 +60,8 @@ export function DressUpEditor() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [originalUserPhoto, setOriginalUserPhoto] = useState<File | null>(null)
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
+  const [isTouchDragging, setIsTouchDragging] = useState(false)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -186,7 +146,9 @@ export function DressUpEditor() {
   const selectedPlacedItem = placedItems.find((item) => item.id === selectedItem)
 
   const getItemsByCategory = (category: ClothingCategory) => {
-    return mockClothingItems.filter((item) => item.category === category)
+    const items = clothingItems.filter((item) => item.category === category)
+    console.log(`カテゴリ ${category} のアイテム:`, items)
+    return items
   }
 
   const exportOutfit = () => {
@@ -206,6 +168,7 @@ export function DressUpEditor() {
 
   const generateDressUpImageDirectly = async (itemsToGenerate: PlacedItem[]) => {
     if (itemsToGenerate.length === 0) {
+      console.log('No items to generate');
       return;
     }
 
@@ -214,19 +177,112 @@ export function DressUpEditor() {
       return;
     }
 
+    // 服の画像URLを事前に検証
+    const clothingImageUrls = itemsToGenerate
+      .map(placedItem => placedItem.item.imageUrl)
+      .filter((url): url is string => url !== undefined && url.trim() !== '');
+
+    if (clothingImageUrls.length === 0) {
+      alert('有効な服の画像が見つかりません');
+      return;
+    }
+
+    console.log('Starting image generation with:', {
+      userPhoto: originalUserPhoto.name,
+      clothingItems: clothingImageUrls.length,
+      generatedImage: generatedDressUpImage ? 'exists' : 'none'
+    });
+
     setIsGeneratingDressUp(true);
     try {
-      const items = itemsToGenerate.map(placedItem => ({
-        name: placedItem.item.name,
-        color: placedItem.item.color,
-        brand: placedItem.item.brand,
-      }));
+
+      // 画像URLをデータURLに変換
+      console.log('服の画像URLを取得:', clothingImageUrls);
+      const clothingImages = await Promise.all(
+        clothingImageUrls.map(async (url, index) => {
+          try {
+            console.log(`画像 ${index + 1} を取得中:`, url);
+            
+            // 認証が必要なAPIエンドポイントの場合、適切なヘッダーを追加
+            const headers: HeadersInit = {};
+            
+            // Supabaseの認証トークンを取得
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session?.access_token) {
+              headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            
+            const response = await fetch(url, { headers });
+            
+            if (!response.ok) {
+              if (response.status === 401) {
+                throw new Error(`認証が必要です。ログインしてください。`);
+              } else if (response.status === 404) {
+                throw new Error(`画像が見つかりません: ${url}`);
+              } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              }
+            }
+            
+            const blob = await response.blob();
+            console.log(`画像 ${index + 1} のBlob:`, blob.type, blob.size);
+            
+            // MIMEタイプを検証
+            const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!SUPPORTED_IMAGE_TYPES.includes(blob.type)) {
+              throw new Error(`Unsupported image type: ${blob.type}. Expected JPEG, PNG, or WebP.`);
+            }
+            
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dataUrl = reader.result as string;
+                console.log(`画像 ${index + 1} のデータURL形式:`, dataUrl.substring(0, 50) + '...');
+                resolve(dataUrl);
+              };
+              reader.onerror = () => reject(new Error('Failed to convert image to data URL'));
+              reader.readAsDataURL(blob);
+            });
+          } catch (error) {
+            console.error('Failed to fetch clothing image:', url, error);
+            
+            // より詳細なエラーメッセージを提供
+            if (error instanceof Error) {
+              throw new Error(`服の画像取得に失敗しました (${index + 1}番目): ${error.message}`);
+            } else {
+              throw new Error(`服の画像取得に失敗しました (${index + 1}番目): ${url}`);
+            }
+          }
+        })
+      );
+      console.log('変換された服の画像データ:', clothingImages.length, '個');
 
       // 生成された画像がある場合は、それを基準に新しい画像を生成
       // ない場合は元の写真を基準にする
-      const baseImage = generatedDressUpImage ? await convertDataUrlToFile(generatedDressUpImage) : originalUserPhoto;
+      let baseImage: File;
       
-      const result = await generateDressUpImage(items, baseImage);
+      if (generatedDressUpImage) {
+        try {
+          baseImage = await convertDataUrlToFile(generatedDressUpImage);
+        } catch (error) {
+          console.error('Failed to convert generated image to File:', error);
+          // 生成画像の変換に失敗した場合は元の写真を使用
+          if (!originalUserPhoto) {
+            throw new Error('元の写真が見つかりません');
+          }
+          baseImage = originalUserPhoto;
+        }
+      } else {
+        if (!originalUserPhoto) {
+          throw new Error('元の写真が見つかりません');
+        }
+        baseImage = originalUserPhoto;
+      }
+      
+      const result = await generateDressUpImageFromImages(baseImage, clothingImages);
       
       if (result.success && result.imageUrl) {
         setGeneratedDressUpImage(result.imageUrl);
@@ -235,7 +291,25 @@ export function DressUpEditor() {
       }
     } catch (error) {
       console.error('Error generating dress-up image:', error);
-      alert('着せ替え画像生成中にエラーが発生しました');
+      
+      // より具体的なエラーメッセージを提供
+      let errorMessage = '着せ替え画像生成中にエラーが発生しました';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('認証が必要')) {
+          errorMessage = 'ログインが必要です。ページを再読み込みしてログインしてください。';
+        } else if (error.message.includes('画像が見つかりません')) {
+          errorMessage = '服の画像が見つかりません。服を再追加してください。';
+        } else if (error.message.includes('元の写真が見つかりません')) {
+          errorMessage = '元の写真が見つかりません。写真を再アップロードしてください。';
+        } else if (error.message.includes('Invalid data URL')) {
+          errorMessage = '画像データの形式が正しくありません。';
+        } else {
+          errorMessage = `エラー: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsGeneratingDressUp(false);
     }
@@ -243,9 +317,33 @@ export function DressUpEditor() {
 
   // DataURLをFileオブジェクトに変換するヘルパー関数
   const convertDataUrlToFile = async (dataUrl: string): Promise<File> => {
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
-    return new File([blob], 'generated-image.png', { type: 'image/png' });
+    try {
+      // DataURLの形式を検証
+      if (!dataUrl || !dataUrl.startsWith('data:')) {
+        throw new Error('Invalid data URL format');
+      }
+      
+      const response = await fetch(dataUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data URL: ${response.status} ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('Empty blob received');
+      }
+      
+      // MIMEタイプを検証
+      const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!SUPPORTED_IMAGE_TYPES.includes(blob.type)) {
+        throw new Error(`Unsupported image type: ${blob.type}`);
+      }
+      
+      return new File([blob], 'generated-image.png', { type: blob.type });
+    } catch (error) {
+      console.error('Error converting data URL to File:', error);
+      throw error;
+    }
   }
 
   // ドラッグ&ドロップ関連のハンドラー
@@ -253,11 +351,95 @@ export function DressUpEditor() {
     e.dataTransfer.setData('clothing-item', JSON.stringify(item))
     e.dataTransfer.effectAllowed = 'copy'
     setIsDragging(true)
+    
+    // ドラッグ中の視覚的フィードバックを改善
+    if (e.dataTransfer.setDragImage) {
+      const dragImage = e.currentTarget.cloneNode(true) as HTMLElement
+      dragImage.style.transform = 'rotate(5deg)'
+      dragImage.style.opacity = '0.8'
+      document.body.appendChild(dragImage)
+      e.dataTransfer.setDragImage(dragImage, 50, 50)
+      setTimeout(() => document.body.removeChild(dragImage), 0)
+    }
   }
 
   const handleDragEnd = () => {
     setIsDragging(false)
     setIsDragOver(false)
+  }
+
+  // タッチデバイス対応のハンドラー
+  const handleTouchStart = (e: React.TouchEvent, item: ClothingItem) => {
+    // スマホでのスクロールを妨げないように、preventDefaultは最小限に
+    const touch = e.touches[0]
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY })
+    setIsTouchDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos || !isTouchDragging) return
+    
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStartPos.x
+    const deltaY = touch.clientY - touchStartPos.y
+    
+    // 一定距離以上移動した場合のみドラッグとみなす
+    if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
+      // ドラッグ中はスクロールを防止
+      e.preventDefault()
+      // タッチドラッグの視覚的フィードバック
+      document.body.style.cursor = 'grabbing'
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent, item: ClothingItem) => {
+    if (!touchStartPos || !isTouchDragging) return
+    
+    e.preventDefault()
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStartPos.x
+    const deltaY = touch.clientY - touchStartPos.y
+    
+    // タップとドラッグを区別（移動距離が小さい場合はタップとして処理）
+    if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
+      // タップ: アイテムを追加
+      addClothingItem(item)
+    } else {
+      // ドラッグ: キャンバス上にドロップされたかチェック
+      const canvasElement = canvasRef.current
+      if (canvasElement) {
+        const rect = canvasElement.getBoundingClientRect()
+        const isOverCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                           touch.clientY >= rect.top && touch.clientY <= rect.bottom
+        
+        if (isOverCanvas) {
+          // キャンバス上にドロップされた場合
+          addClothingItem(item)
+          // 自動的に画像生成を実行
+          setTimeout(async () => {
+            try {
+              const newPlacedItems = [...placedItems, {
+                id: `placed-${Date.now()}`,
+                clothingId: item.id,
+                x: 200,
+                y: 200,
+                scale: 1,
+                rotation: 0,
+                visible: true,
+                item,
+              }]
+              await generateDressUpImageDirectly(newPlacedItems)
+            } catch (error) {
+              console.error('Error in auto-generation after touch drop:', error)
+            }
+          }, 100)
+        }
+      }
+    }
+    
+    setTouchStartPos(null)
+    setIsTouchDragging(false)
+    document.body.style.cursor = ''
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -335,35 +517,68 @@ export function DressUpEditor() {
               </div>
 
               <div className="flex-1 overflow-y-auto px-2 pb-2">
-                {Object.entries(categoryConfig).map(([key, config]) => (
-                  <TabsContent key={key} value={key} className="h-full">
-                    <div className="grid grid-cols-2 gap-1">
-                      {getItemsByCategory(key as ClothingCategory).map((item) => (
-                        <div
-                          key={item.id}
-                          className="p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200"
-                          onClick={() => addClothingItem(item)}
-                        >
-                          <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden mb-1">
-                            {item.generatedImageUrl ? (
-                              <img
-                                src={item.generatedImageUrl}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Upload className="w-4 h-4 text-gray-400" />
-                            )}
-                          </div>
-                          <p className="font-medium text-xs truncate text-center">{item.name}</p>
-                          <Badge variant="secondary" className="text-xs w-full justify-center mt-1 h-4">
-                            {item.color}
-                          </Badge>
-                        </div>
-                      ))}
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">読み込み中...</p>
                     </div>
-                  </TabsContent>
-                ))}
+                  </div>
+                ) : (
+                  Object.entries(categoryConfig).map(([key, config]) => (
+                    <TabsContent key={key} value={key} className="h-full">
+                      <div className="grid grid-cols-2 gap-1">
+                        {getItemsByCategory(key as ClothingCategory).length === 0 ? (
+                          <div className="col-span-2 flex items-center justify-center h-32 text-center">
+                            <div>
+                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">アイテムがありません</p>
+                              <p className="text-xs text-gray-400">服登録ページでアイテムを追加してください</p>
+                            </div>
+                          </div>
+                        ) : (
+                          getItemsByCategory(key as ClothingCategory).map((item) => (
+                            <div
+                              key={item.id}
+                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none ${
+                                isDragging || isTouchDragging ? 'opacity-50 scale-95' : ''
+                              } active:scale-95 active:bg-accent/70`}
+                              onClick={() => addClothingItem(item)}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, item)}
+                              onDragEnd={handleDragEnd}
+                              onTouchStart={(e) => handleTouchStart(e, item)}
+                              onTouchMove={handleTouchMove}
+                              onTouchEnd={(e) => handleTouchEnd(e, item)}
+                            >
+                              <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={`アイテム ${item.id.slice(-4)}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      console.error('画像の読み込みに失敗しました:', item.imageUrl);
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                    onLoad={() => {
+                                      console.log('画像の読み込みに成功しました:', item.imageUrl);
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center">
+                                    <Upload className="w-4 h-4 text-gray-400 mb-1" />
+                                    <span className="text-xs text-gray-500">画像なし</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </TabsContent>
+                  ))
+                )}
               </div>
             </Tabs>
           </div>
@@ -424,7 +639,7 @@ export function DressUpEditor() {
             <div className="flex-1 flex items-center justify-center">
               {!userPhoto ? (
                 <div className="aspect-[3/4] w-full border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center">
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="user-photo" />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} className="hidden" id="user-photo" />
                   <label htmlFor="user-photo" className="cursor-pointer text-center">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm font-medium mb-1">写真をアップロード</p>
@@ -544,7 +759,7 @@ export function DressUpEditor() {
                           onMouseDown={(e) => handleMouseDown(e, placedItem.id)}
                         >
                           <div className="w-12 h-12 bg-primary/20 border-2 border-primary/50 rounded flex items-center justify-center">
-                            <span className="text-xs text-center px-1">{placedItem.item.name}</span>
+                            <span className="text-xs text-center px-1">アイテム {placedItem.item.id.slice(-4)}</span>
                           </div>
                         </div>
                       ))}
