@@ -1,17 +1,30 @@
--- Users can read their own plan
+-- 自分のプランは読める
+drop policy if exists "Users can read their own plan" on public.user_plans;
 create policy "Users can read their own plan"
-  on user_plans for select
+  on public.user_plans
+  for select
+  to authenticated
   using (auth.uid() = user_id);
 
--- Only service role can manage plans
+-- サービスレイヤ（DBロール service_role）だけ管理可能
+drop policy if exists "Only service role can insert plans" on public.user_plans;
 create policy "Only service role can insert plans"
-  on user_plans for insert
-  with check (false);
+  on public.user_plans
+  for insert
+  to service_role
+  with check (true);
 
+drop policy if exists "Only service role can update plans" on public.user_plans;
 create policy "Only service role can update plans"
-  on user_plans for update
-  using (false);
+  on public.user_plans
+  for update
+  to service_role
+  using (true)
+  with check (true);
 
+drop policy if exists "Only service role can delete plans" on public.user_plans;
 create policy "Only service role can delete plans"
-  on user_plans for delete
-  using (false);
+  on public.user_plans
+  for delete
+  to service_role
+  using (true);

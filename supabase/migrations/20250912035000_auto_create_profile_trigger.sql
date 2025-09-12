@@ -1,24 +1,26 @@
--- Function to automatically create profile and plan after user signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
+-- トリガー関数は search_path を固定し、plan は明示キャスト
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
   -- Create profile
-  INSERT INTO public.profiles (id)
-  VALUES (new.id);
-  
-  -- Create default plan
-  INSERT INTO public.user_plans (user_id, plan)
-  VALUES (new.id, 'free');
-  
-  RETURN new;
-END;
+  insert into public.profiles (id)
+  values (new.id);
+
+  -- Create default plan（public.plan を明示）
+  insert into public.user_plans (user_id, plan)
+  values (new.id, 'free'::public.plan);
+
+  return new;
+end;
 $$;
 
--- Trigger that fires after new user is created
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+-- AFTER INSERT trigger on auth.users
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function public.handle_new_user();

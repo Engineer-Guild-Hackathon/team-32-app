@@ -1,62 +1,28 @@
-create type "public"."plan" as enum ('free', 'pro');
+-- ENUM 型は必ずスキーマ修飾
+create type public.plan as enum ('free', 'pro');
 
-create table "public"."user_plans" (
-    "user_id" uuid not null,
-    "created_at" timestamp with time zone not null default now(),
-    "plan" plan not null default 'free'::plan
+-- カラム型と DEFAULT は public.plan を明示
+create table public.user_plans (
+  user_id    uuid not null,
+  created_at timestamptz not null default now(),
+  plan       public.plan not null default 'free'::public.plan
 );
 
+-- RLS は後続ポリシーで制御
+alter table public.user_plans enable row level security;
 
-alter table "public"."user_plans" enable row level security;
+-- PK
+create unique index user_plans_pkey on public.user_plans using btree (user_id);
+alter table public.user_plans add constraint user_plans_pkey primary key using index user_plans_pkey;
 
-CREATE UNIQUE INDEX user_plans_pkey ON public.user_plans USING btree (user_id);
+-- FK はスキーマ明示 + トランザクション終端まで遅延（順序揺れに強くする）
+alter table public.user_plans
+  add constraint user_plans_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade
+  deferrable initially deferred not valid;
+alter table public.user_plans validate constraint user_plans_user_id_fkey;
 
-alter table "public"."user_plans" add constraint "user_plans_pkey" PRIMARY KEY using index "user_plans_pkey";
-
-alter table "public"."user_plans" add constraint "user_plans_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
-
-alter table "public"."user_plans" validate constraint "user_plans_user_id_fkey";
-
-grant delete on table "public"."user_plans" to "anon";
-
-grant insert on table "public"."user_plans" to "anon";
-
-grant references on table "public"."user_plans" to "anon";
-
-grant select on table "public"."user_plans" to "anon";
-
-grant trigger on table "public"."user_plans" to "anon";
-
-grant truncate on table "public"."user_plans" to "anon";
-
-grant update on table "public"."user_plans" to "anon";
-
-grant delete on table "public"."user_plans" to "authenticated";
-
-grant insert on table "public"."user_plans" to "authenticated";
-
-grant references on table "public"."user_plans" to "authenticated";
-
-grant select on table "public"."user_plans" to "authenticated";
-
-grant trigger on table "public"."user_plans" to "authenticated";
-
-grant truncate on table "public"."user_plans" to "authenticated";
-
-grant update on table "public"."user_plans" to "authenticated";
-
-grant delete on table "public"."user_plans" to "service_role";
-
-grant insert on table "public"."user_plans" to "service_role";
-
-grant references on table "public"."user_plans" to "service_role";
-
-grant select on table "public"."user_plans" to "service_role";
-
-grant trigger on table "public"."user_plans" to "service_role";
-
-grant truncate on table "public"."user_plans" to "service_role";
-
-grant update on table "public"."user_plans" to "service_role";
-
-
+-- Grants（必要なら残す。Supabase では RLS が最終ゲート）
+grant delete, insert, references, select, trigger, truncate, update on table public.user_plans to anon;
+grant delete, insert, references, select, trigger, truncate, update on table public.user_plans to authenticated;
+grant delete, insert, references, select, trigger, truncate, update on table public.user_plans to service_role;
