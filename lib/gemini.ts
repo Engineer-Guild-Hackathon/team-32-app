@@ -127,3 +127,61 @@ export async function generateDressUpImageFromImages(
   }
 }
 
+// 着せ替え評価のインターフェース
+export interface OutfitEvaluation {
+  trendScore: number;
+  colorScore: number;
+  silhouetteScore: number;
+  styleScore: number;
+  balanceScore: number;
+  goodPoints: string[];
+  improvements: string[];
+  recommendation: string;
+}
+
+export interface OutfitEvaluationResponse {
+  success: boolean;
+  evaluation?: OutfitEvaluation;
+  evaluationText?: string;
+  isTextFormat?: boolean;
+  error?: string;
+}
+
+// 着せ替え評価（Geminiベース）
+export async function evaluateOutfitWithGemini(
+  imageData: string,
+  tpo?: string
+): Promise<OutfitEvaluationResponse> {
+  try {
+    const response = await fetch('/api/evaluate-outfit-gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageData, tpo }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      return {
+        success: true,
+        evaluation: data.evaluation,
+        evaluationText: data.evaluationText,
+        isTextFormat: data.isTextFormat,
+      };
+    } else {
+      return {
+        success: false,
+        error: data.error || 'Failed to evaluate outfit',
+      };
+    }
+  } catch (error) {
+    console.error('Error evaluating outfit with Gemini:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+

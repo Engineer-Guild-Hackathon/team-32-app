@@ -19,10 +19,12 @@ import {
   Footprints,
   Watch,
   Sparkles,
+  Star,
 } from "lucide-react"
 import { generateDressUpImageFromImages } from "@/lib/gemini"
 import { useClothingItems } from "@/hooks/use-clothing-items"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
+import { OutfitEvaluationGemini } from "@/components/outfit-evaluation-gemini"
 
 interface PlacedItem {
   id: string
@@ -62,6 +64,8 @@ export function DressUpEditor() {
   const [originalUserPhoto, setOriginalUserPhoto] = useState<File | null>(null)
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [isTouchDragging, setIsTouchDragging] = useState(false)
+  const [showEvaluation, setShowEvaluation] = useState(false)
+  const [tpo, setTpo] = useState<string>('')
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -634,6 +638,17 @@ export function DressUpEditor() {
               >
                 <Sparkles className="w-3 h-3" />
               </Button>
+              {generatedDressUpImage && (
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setShowEvaluation(!showEvaluation)}
+                  title="コーディネート評価"
+                >
+                  <Star className="w-3 h-3" />
+                </Button>
+              )}
             </div>
             
             <div className="flex-1 flex items-center justify-center">
@@ -768,6 +783,35 @@ export function DressUpEditor() {
               )}
             </div>
           </div>
+
+          {/* 評価機能エリア */}
+          {showEvaluation && generatedDressUpImage && (
+            <div className="border-t bg-gray-50 p-3 max-h-96 overflow-y-auto">
+              <div className="mb-3">
+                <label className="text-xs font-medium text-gray-700 mb-1 block">
+                  TPO（シーン）
+                </label>
+                <select
+                  value={tpo}
+                  onChange={(e) => setTpo(e.target.value)}
+                  className="w-full px-2 py-1 text-xs border rounded"
+                >
+                  <option value="">選択してください</option>
+                  <option value="カジュアル">カジュアル</option>
+                  <option value="ビジネス">ビジネス</option>
+                  <option value="フォーマル">フォーマル</option>
+                  <option value="デート">デート</option>
+                  <option value="パーティー">パーティー</option>
+                  <option value="旅行">旅行</option>
+                  <option value="スポーツ">スポーツ</option>
+                </select>
+              </div>
+              <OutfitEvaluationGemini 
+                imageData={generatedDressUpImage}
+                tpo={tpo || undefined}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
