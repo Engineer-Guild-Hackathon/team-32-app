@@ -8,6 +8,7 @@ import { useClothingItems } from "@/hooks/use-clothing-items"
 import { AddItemDialog } from "@/components/clothing/add-item-dialog"
 import { CategoryTabs } from "@/components/clothing/category-tabs"
 import type { ClothingCategory } from "@/lib/types/clothing"
+import { BackgroundProvider, MobilePageBackground } from "@/components/mobile-background-provider"
 import {
   Sheet,
   SheetContent,
@@ -23,9 +24,11 @@ export default function ClothingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* スマートフォン用ヘッダー */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+    <BackgroundProvider>
+      <MobilePageBackground>
+        <main className="min-h-screen">
+          {/* スマートフォン用ヘッダー */}
+          <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-white/20">
         <div className="flex items-center justify-between px-4 py-3">
           {/* ハンバーガーメニュー */}
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -74,18 +77,20 @@ export default function ClothingPage() {
               <span className="hidden sm:inline">アイテム追加</span>
             </Button>
           </AddItemDialog>
-        </div>
-      </div>
+          </div>
+          </div>
 
-      {/* メインコンテンツ */}
-      <div className="px-4 py-4">
-        <CategoryTabs 
-          items={items}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          onDeleteItem={deleteItem}
-        />
-      </div>
-    </main>
+          {/* メインコンテンツ */}
+          <div className="px-4 py-4">
+            <CategoryTabs 
+              items={items}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              onDeleteItem={deleteItem}
+            />
+          </div>
+        </main>
+      </MobilePageBackground>
+    </BackgroundProvider>
   )
 }

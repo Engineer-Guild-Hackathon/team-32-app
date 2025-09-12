@@ -8,6 +8,7 @@ import { FrameTypeSelector } from "@/components/frame-type-selector"
 import { PersonalColorSelector } from "@/components/personal-color-selector"
 import { Camera, Upload } from "lucide-react"
 import Image from "next/image"
+import { useBackground } from "@/components/mobile-background-provider"
 
 type FrameType = "straight" | "wave" | "natural" | ""
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
@@ -18,6 +19,7 @@ interface ProfileData {
 }
 
 export function ProfileSetup() {
+  const { refreshBackground } = useBackground()
   const [profileData, setProfileData] = useState<ProfileData>({
     frameType: "",
     personalColor: "",
@@ -129,8 +131,15 @@ export function ProfileSetup() {
   }
 
   const handlePersonalColorChange = async (value: PersonalColor) => {
+    console.log('パーソナルカラー変更:', value)
     setProfileData((prev) => ({ ...prev, personalColor: value }))
     await saveProfileData({ personalColor: value })
+    console.log('プロフィール保存完了')
+    // パーソナルカラー変更後に背景をリフレッシュ
+    setTimeout(() => {
+      console.log('背景リフレッシュ開始')
+      refreshBackground()
+    }, 500)
   }
 
   if (isLoading) {
