@@ -17,6 +17,7 @@ import {
 import { PiPantsLight } from "react-icons/pi"
 import { generateDressUpImageFromImages } from "@/lib/gemini"
 import { useClothingItems } from "@/hooks/use-clothing-items"
+import { compressImage, compressDataUrl, getDataUrlSize, formatFileSize } from "@/lib/image-utils"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { OutfitEvaluationGemini } from "@/components/outfit-evaluation-gemini"
 import { useRouter } from "next/navigation"
@@ -157,7 +158,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     setIsGeneratingDressUp(true);
     try {
 
-      // 画像URLをデータURLに変換
+      // 画像URLをデータURLに変換して圧縮
       console.log('服の画像URLを取得:', clothingImageUrls);
       const clothingImages = await Promise.all(
         clothingImageUrls.map(async (url, index) => {
@@ -197,16 +198,27 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
               throw new Error(`Unsupported image type: ${blob.type}. Expected JPEG, PNG, or WebP.`);
             }
 
-            return new Promise<string>((resolve, reject) => {
+            // 画像を圧縮
+            const originalDataUrl = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
-              reader.onload = () => {
-                const dataUrl = reader.result as string;
-                console.log(`画像 ${index + 1} のデータURL形式:`, dataUrl.substring(0, 50) + '...');
-                resolve(dataUrl);
-              };
+              reader.onload = () => resolve(reader.result as string);
               reader.onerror = () => reject(new Error('Failed to convert image to data URL'));
               reader.readAsDataURL(blob);
             });
+
+            const originalSize = getDataUrlSize(originalDataUrl);
+            console.log(`画像 ${index + 1} の元のサイズ: ${formatFileSize(originalSize)}`);
+
+            // 画像サイズが1MB以上の場合は圧縮
+            let finalDataUrl = originalDataUrl;
+            if (originalSize > 1024 * 1024) {
+              console.log(`画像 ${index + 1} を圧縮中...`);
+              finalDataUrl = await compressDataUrl(originalDataUrl, 800, 800, 0.7);
+              const compressedSize = getDataUrlSize(finalDataUrl);
+              console.log(`画像 ${index + 1} の圧縮後のサイズ: ${formatFileSize(compressedSize)}`);
+            }
+
+            return finalDataUrl;
           } catch (error) {
             console.error('Failed to fetch clothing image:', url, error);
 
@@ -243,7 +255,20 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
         baseImage = originalUserPhoto;
       }
 
-      const result = await generateDressUpImageFromImages(baseImage, clothingImages);
+      // ベース画像も圧縮
+      let compressedBaseImage = baseImage;
+      const baseImageSize = baseImage.size;
+      console.log(`ベース画像のサイズ: ${formatFileSize(baseImageSize)}`);
+
+      if (baseImageSize > 1024 * 1024) {
+        console.log('ベース画像を圧縮中...');
+        const compressedDataUrl = await compressImage(baseImage, 800, 800, 0.7);
+        const blob = await fetch(compressedDataUrl).then(r => r.blob());
+        compressedBaseImage = new File([blob], baseImage.name, { type: 'image/jpeg' });
+        console.log(`ベース画像の圧縮後のサイズ: ${formatFileSize(compressedBaseImage.size)}`);
+      }
+
+      const result = await generateDressUpImageFromImages(compressedBaseImage, clothingImages);
 
       if (result.success && result.imageUrl) {
         setGeneratedDressUpImage(result.imageUrl);
