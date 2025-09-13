@@ -45,6 +45,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
   const [userPhoto, setUserPhoto] = useState<File | null>(null)
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null)
   const [selectedClothingItems, setSelectedClothingItems] = useState<ClothingItem[]>([])
+  const [usedClothingItems, setUsedClothingItems] = useState<ClothingItem[]>([])
   const [activeCategory, setActiveCategory] = useState<ClothingCategory>("tops")
   const canvasRef = useRef<HTMLDivElement>(null)
   const [isGeneratingDressUp, setIsGeneratingDressUp] = useState(false)
@@ -94,8 +95,13 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     setSelectedClothingItems((prev) => {
       const exists = prev.find(selected => selected.id === item.id)
       if (exists) {
+        // 選択解除
         return prev.filter(selected => selected.id !== item.id)
       } else {
+        // 選択追加（2つまで制限）
+        if (prev.length >= 2) {
+          return prev // 2つを超えたら追加しない
+        }
         return [...prev, item]
       }
     })
@@ -244,6 +250,17 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
         setGeneratedDressUpImage(result.imageUrl);
         // 親コンポーネントに生成された画像を通知
         onImageGenerated?.(result.imageUrl);
+        // 画像生成完了後、使用済みアイテムを累積的に記録してから選択をクリア
+        setUsedClothingItems(prev => {
+          const newUsedItems = [...prev];
+          selectedClothingItems.forEach(item => {
+            if (!newUsedItems.find(used => used.id === item.id)) {
+              newUsedItems.push(item);
+            }
+          });
+          return newUsedItems;
+        });
+        setSelectedClothingItems([]);
       } else {
         alert(`着せ替え画像生成に失敗しました: ${result.error}`);
       }
@@ -415,6 +432,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                     setGeneratedDressUpImage(null)
                     setUserPhoto(originalUserPhoto)
                     setSelectedClothingItems([])
+                    setUsedClothingItems([])
                   }}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
@@ -456,8 +474,11 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
 
         {/* 下部：クローゼットパネル */}
         <div className="h-80 border-t bg-white flex flex-col">
-          <div className="px-3 py-2 border-b">
+          <div className="px-3 py-2 border-b flex items-center justify-between">
             <h2 className="text-sm font-bold">クローゼット</h2>
+            <span className="text-xs text-gray-500">
+              {selectedClothingItems.length}/2
+            </span>
           </div>
 
           <div className="flex-1 overflow-hidden">
@@ -496,13 +517,23 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                             </div>
                           </div>
                         ) : (
-                          getItemsByCategory(key as ClothingCategory).map((item) => (
+                          getItemsByCategory(key as ClothingCategory).map((item) => {
+                            const isSelected = selectedClothingItems.find(selected => selected.id === item.id)
+                            const isUsed = usedClothingItems.find(used => used.id === item.id)
+                            const isMaxSelected = selectedClothingItems.length >= 2
+                            const isDisabled = isUsed || (!isSelected && isMaxSelected)
+                            
+                            return (
                             <div
                               key={item.id}
-                              className={`p-1 border rounded hover:bg-accent/50 cursor-pointer transition-all duration-200 select-none active:scale-95 active:bg-accent/70 ${
-                                selectedClothingItems.find(selected => selected.id === item.id) ? 'ring-2 ring-primary bg-primary/10' : ''
+                              className={`p-1 border rounded transition-all duration-200 select-none ${
+                                isDisabled 
+                                  ? 'opacity-40 cursor-not-allowed' 
+                                  : 'hover:bg-accent/50 cursor-pointer active:scale-95 active:bg-accent/70'
+                              } ${
+                                isSelected ? 'ring-2 ring-primary bg-primary/10' : ''
                               }`}
-                              onClick={() => toggleClothingSelection(item)}
+                              onClick={() => !isDisabled && toggleClothingSelection(item)}
                             >
                               <div className="aspect-square bg-gray-100 rounded flex items-center justify-center overflow-hidden">
                                 {item.imageUrl ? (
@@ -526,7 +557,8 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                                 )}
                               </div>
                             </div>
-                          ))
+                            )
+                          })
                         )}
                       </div>
                     </TabsContent>
