@@ -162,7 +162,7 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>新しいアイテムを追加</DialogTitle>
           <DialogDescription>カテゴリーを選択して画像を追加してください</DialogDescription>
