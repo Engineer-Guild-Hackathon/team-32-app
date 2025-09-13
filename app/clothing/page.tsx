@@ -1,22 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { Menu, Plus, User, Shirt, Sparkles, Home } from "lucide-react"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useClothingItems } from "@/hooks/use-clothing-items"
 import { AddItemDialog } from "@/components/clothing/add-item-dialog"
 import { CategoryTabs } from "@/components/clothing/category-tabs"
 import type { ClothingCategory } from "@/lib/types/clothing"
 import { BackgroundProvider, MobilePageBackground } from "@/components/mobile-background-provider"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { AppSidebar } from "@/components/app-sidebar"
 
 export default function ClothingPage() {
   const { items, addItem, deleteItem } = useClothingItems()
@@ -31,47 +23,7 @@ export default function ClothingPage() {
           <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-white/20">
         <div className="flex items-center justify-between px-4 py-3">
           {/* ハンバーガーメニュー */}
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-2">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64">
-              <SheetHeader>
-                <SheetTitle>メニュー</SheetTitle>
-                <SheetDescription>
-                  アプリの各機能にアクセスできます
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 space-y-2">
-                <Link href="/" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Home className="h-4 w-4" />
-                    ホーム
-                  </Button>
-                </Link>
-                <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <User className="h-4 w-4" />
-                    プロフィール登録
-                  </Button>
-                </Link>
-                <Link href="/clothing" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Shirt className="h-4 w-4" />
-                    服登録
-                  </Button>
-                </Link>
-                <Link href="/styling" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Fit＆Check
-                  </Button>
-                </Link>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
           {/* タイトル */}
           <h1 className="text-lg font-bold text-foreground">クローゼット</h1>
