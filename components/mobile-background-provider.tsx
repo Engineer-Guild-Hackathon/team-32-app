@@ -9,7 +9,7 @@ import {
 import { usePersonalColor } from '@/hooks/use-user-profile';
 
 interface BackgroundContextType {
-  selectedBackground: string;
+  selectedBackground: string | null;
   setSelectedBackground: (backgroundId: string) => void;
   personalColor: string | null;
   isLoading: boolean;
@@ -34,17 +34,16 @@ interface BackgroundProviderProps {
 }
 
 export function BackgroundProvider({ 
-  children, 
-  defaultBackground = 'spring' 
+  children,
 }: BackgroundProviderProps) {
   const { personalColor, isLoading, refetch } = usePersonalColor();
-  const [selectedBackground, setSelectedBackground] = useState<string>(defaultBackground);
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
   const availableThemes = getAllBackgroundThemes();
 
   // パーソナルカラーに基づく背景の自動設定
   useEffect(() => {
     console.log('BackgroundProvider - personalColor変更:', personalColor, 'isLoading:', isLoading)
-    if (!isLoading && personalColor) {
+    if (!isLoading) {
       const recommendedTheme = getBackgroundThemeByPersonalColor(personalColor);
       console.log('推奨背景テーマ:', recommendedTheme)
       setSelectedBackground(recommendedTheme.id);
@@ -85,27 +84,31 @@ export function MobilePageBackground({
   children, 
   className = '' 
 }: MobilePageBackgroundProps) {
-  const { selectedBackground, availableThemes } = useBackground();
+  const { selectedBackground, availableThemes, isLoading } = useBackground();
 
-  // 選択された背景テーマを取得
-  const selectedTheme = availableThemes.find(theme => theme.id === selectedBackground) || availableThemes[0];
+  // 選択された背景テーマを取得（ローディング中は背景を表示しない）
+  const selectedTheme = selectedBackground
+    ? availableThemes.find(theme => theme.id === selectedBackground)
+    : null;
 
   return (
     <div className={`relative min-h-screen ${className}`}>
-      {/* 背景画像 */}
-      <div 
-        className="fixed inset-0 -z-10"
-        style={{
-          backgroundImage: `url(${selectedTheme.imagePath})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
-        }}
-      >
-        {/* オーバーレイ */}
-        <div className="absolute inset-0 bg-white/15" />
-      </div>
+      {/* 背景画像（ローディングが完了してから表示） */}
+      {!isLoading && selectedTheme && (
+        <div
+          className="fixed inset-0 -z-10"
+          style={{
+            backgroundImage: `url(${selectedTheme.imagePath})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed'
+          }}
+        >
+          {/* オーバーレイ */}
+          <div className="absolute inset-0 bg-white/15" />
+        </div>
+      )}
       
       {/* コンテンツ */}
       <div className="relative z-10 min-h-screen">
