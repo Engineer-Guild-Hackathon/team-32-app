@@ -9,13 +9,12 @@ import {
   Upload,
   RotateCcw,
   Shirt,
-  Package,
   Footprints,
   Watch,
   Sparkles,
-  Star,
   User,
 } from "lucide-react"
+import { PiPantsLight } from "react-icons/pi"
 import { generateDressUpImageFromImages } from "@/lib/gemini"
 import { useClothingItems } from "@/hooks/use-clothing-items"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
@@ -26,7 +25,7 @@ import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 const categoryConfig = {
   tops: { name: "トップス", icon: Shirt },
-  bottoms: { name: "ボトムス", icon: Package },
+  bottoms: { name: "ボトムス", icon: PiPantsLight },
   shoes: { name: "シューズ", icon: Footprints },
   accessories: { name: "小物", icon: Watch },
 }

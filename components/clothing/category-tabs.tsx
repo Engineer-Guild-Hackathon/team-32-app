@@ -2,7 +2,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Shirt, Package, Footprints, Watch } from "lucide-react"
+import { Shirt, Footprints, Watch } from "lucide-react"
+import { PiPantsLight } from "react-icons/pi"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { categoryConfig } from "@/lib/types/clothing"
 import { ItemCard } from "./item-card"
@@ -16,7 +17,7 @@ interface CategoryTabsProps {
 
 const iconMap = {
   Shirt: Shirt,
-  Package: Package,
+  PantsIcon: PiPantsLight,
   Footprints: Footprints,
   Watch: Watch,
 } as const
@@ -39,18 +40,18 @@ export function CategoryTabs({ items, activeCategory, onCategoryChange, onDelete
               value={key} 
               className={`gap-1 text-sm font-medium ${
                 isActive 
-                  ? 'bg-blue-600 text-white' 
+                ? 'bg-blue-600 text-white data-[state=active]:text-white' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{config.name}</span>
+              <Icon className={`w-4 h-4 ${isActive ? 'text-black' : ''}`} />
+              <span className={`hidden sm:inline ${isActive ? 'text-black' : ''}`}>{config.name}</span>
               {itemCount > 0 && (
                 <Badge 
                   variant="secondary" 
                   className={`ml-1 text-xs ${
                     isActive 
-                      ? 'bg-blue-500 text-white' 
+                    ? 'bg-blue-500 text-white border-blue-500' 
                       : 'bg-gray-200 text-gray-600'
                   }`}
                 >

@@ -22,13 +22,15 @@ import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 interface AddItemDialogProps {
   onItemAdded: (item: ClothingItem) => void
+  defaultCategory?: ClothingCategory
   children?: React.ReactNode
 }
 
-export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
+export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children }: AddItemDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<ClothingCategory>("tops")
+  const [selectedCategory, setSelectedCategory] = useState<ClothingCategory>(defaultCategory)
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null)
+  const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [aiPrompt, setAiPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -40,6 +42,12 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
     const file = event.target.files?.[0]
     if (file) {
       setSelectedPhoto(file)
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setSelectedPhotoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -129,13 +137,22 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
   const handleClose = () => {
     setIsOpen(false)
     setSelectedPhoto(null)
+    setSelectedPhotoPreview(null)
     setAiPrompt("")
     setGeneratedImageUrl(null)
     setGeneratedImageFile(null)
+    setSelectedCategory(defaultCategory)
+  }
+
+  const handleOpen = (open: boolean) => {
+    if (open) {
+      setSelectedCategory(defaultCategory)
+    }
+    setIsOpen(open)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         {children || (
           <Button className="gap-2">
@@ -188,8 +205,16 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
               <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} className="hidden" id="item-photo" />
                 <label htmlFor="item-photo" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm">{selectedPhoto ? selectedPhoto.name : "クリックして写真を選択"}</p>
+                  {selectedPhotoPreview ? (
+                    <div className="space-y-2">
+                      <img src={selectedPhotoPreview} alt="Preview" className="w-full h-48 object-contain rounded" />
+                    </div>
+                  ) : (
+                    <>
+                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm">クリックして写真を選択</p>
+                    </>
+                  )}
                 </label>
               </div>
             </div>

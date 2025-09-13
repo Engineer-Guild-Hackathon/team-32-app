@@ -29,7 +29,7 @@ export default function ClothingPage() {
           <h1 className="text-lg font-bold text-foreground">クローゼット</h1>
 
           {/* アイテム追加ボタン */}
-          <AddItemDialog onItemAdded={addItem}>
+          <AddItemDialog onItemAdded={addItem} defaultCategory={activeCategory}>
             <Button size="sm" className="gap-1 bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">アイテム追加</span>
