@@ -22,12 +22,13 @@ import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 
 interface AddItemDialogProps {
   onItemAdded: (item: ClothingItem) => void
+  defaultCategory?: ClothingCategory
   children?: React.ReactNode
 }
 
-export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
+export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children }: AddItemDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<ClothingCategory>("tops")
+  const [selectedCategory, setSelectedCategory] = useState<ClothingCategory>(defaultCategory)
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null)
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -140,10 +141,18 @@ export function AddItemDialog({ onItemAdded, children }: AddItemDialogProps) {
     setAiPrompt("")
     setGeneratedImageUrl(null)
     setGeneratedImageFile(null)
+    setSelectedCategory(defaultCategory)
+  }
+
+  const handleOpen = (open: boolean) => {
+    if (open) {
+      setSelectedCategory(defaultCategory)
+    }
+    setIsOpen(open)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         {children || (
           <Button className="gap-2">
