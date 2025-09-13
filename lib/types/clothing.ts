@@ -16,7 +16,7 @@ export const categoryConfig = {
   },
   bottoms: {
     name: "ボトムス",
-    iconName: "Package" as const,
+    iconName: "PantsIcon" as const,
   },
   shoes: {
     name: "シューズ",

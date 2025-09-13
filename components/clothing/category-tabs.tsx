@@ -2,7 +2,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Shirt, Package, Footprints, Watch } from "lucide-react"
+import { Shirt, Footprints, Watch } from "lucide-react"
+import { PiPantsLight } from "react-icons/pi"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { categoryConfig } from "@/lib/types/clothing"
 import { ItemCard } from "./item-card"
@@ -16,7 +17,7 @@ interface CategoryTabsProps {
 
 const iconMap = {
   Shirt: Shirt,
-  Package: Package,
+  PantsIcon: PiPantsLight,
   Footprints: Footprints,
   Watch: Watch,
 } as const
