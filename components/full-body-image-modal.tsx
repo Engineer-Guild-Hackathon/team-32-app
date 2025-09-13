@@ -136,7 +136,7 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>全身写真を登録</DialogTitle>
         </DialogHeader>
