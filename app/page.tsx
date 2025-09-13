@@ -1,23 +1,37 @@
 "use client"
 
-import { LogoutButton } from "@/components/logout-button"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { User, Shirt, Sparkles } from "lucide-react"
 import { BackgroundProvider, MobilePageBackground } from "@/components/mobile-background-provider"
+import { AppSidebar } from "@/components/app-sidebar"
 
 export default function Home() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   return (
     <BackgroundProvider>
       <MobilePageBackground>
         <main className="min-h-screen">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-end mb-4">
-              <LogoutButton />
+          {/* スマートフォン用ヘッダー */}
+          <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-white/20">
+            <div className="flex items-center justify-between px-4 py-3">
+              {/* ハンバーガーメニュー */}
+              <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+
+              {/* タイトル */}
+              <h1 className="text-lg font-bold text-foreground">#Fit Check</h1>
+
+              {/* 空のスペース */}
+              <div className="w-10"></div>
             </div>
+          </div>
+
+          <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
-              <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 text-balance">#Fit Check</h1>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 text-balance">#Fit Check</h2>
               <p className="text-lg sm:text-xl text-muted-foreground text-pretty max-w-2xl mx-auto px-4">
                 「似合う」を学ぶFashion app
               </p>
