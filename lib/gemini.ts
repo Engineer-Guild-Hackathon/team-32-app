@@ -86,6 +86,23 @@ export async function generateDressUpImageFromImages(
     }
   } catch (error) {
     console.error('Error generating dress-up image from images:', error);
+
+    // Request Entity Too Largeエラーの検出と処理
+    if (error instanceof Error) {
+      if (error.message.includes('Request En') || error.message.includes('413') || error.message.includes('too large')) {
+        return {
+          success: false,
+          error: '画像サイズが大きすぎます。画像は自動的に圧縮されますが、それでも大きすぎる場合は、より小さい画像を使用してください。',
+        };
+      }
+      if (error.message.includes('Unexpected token') && error.message.includes('is not valid JSON')) {
+        return {
+          success: false,
+          error: 'サーバーからの応答が正しくありません。画像サイズが大きすぎる可能性があります。',
+        };
+      }
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

@@ -92,3 +92,7 @@ async function generateDressUpImageHandler(request: NextRequest, userId: string,
 }
 
 export const POST = withApiLimit(generateDressUpImageHandler);
+
+// Next.js API Route Config
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60秒のタイムアウト設定
