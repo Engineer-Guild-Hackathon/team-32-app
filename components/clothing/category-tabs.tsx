@@ -39,18 +39,18 @@ export function CategoryTabs({ items, activeCategory, onCategoryChange, onDelete
               value={key} 
               className={`gap-1 text-sm font-medium ${
                 isActive 
-                  ? 'bg-blue-600 text-white' 
+                ? 'bg-blue-600 text-white data-[state=active]:text-white' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{config.name}</span>
+              <Icon className={`w-4 h-4 ${isActive ? 'text-black' : ''}`} />
+              <span className={`hidden sm:inline ${isActive ? 'text-black' : ''}`}>{config.name}</span>
               {itemCount > 0 && (
                 <Badge 
                   variant="secondary" 
                   className={`ml-1 text-xs ${
                     isActive 
-                      ? 'bg-blue-500 text-white' 
+                    ? 'bg-blue-500 text-white border-blue-500' 
                       : 'bg-gray-200 text-gray-600'
                   }`}
                 >
