@@ -1,9 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Palette } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Palette, Sparkles } from "lucide-react"
+import { AIDiagnosisModal } from "@/components/ai-diagnosis-modal"
 
 type PersonalColor = "spring" | "autumn" | "summer" | "winter" | ""
 
@@ -13,6 +16,8 @@ interface PersonalColorSelectorProps {
 }
 
 export function PersonalColorSelector({ value, onChange }: PersonalColorSelectorProps) {
+  const [aiModalOpen, setAiModalOpen] = useState(false)
+
   const personalColors = [
     {
       id: "spring",
@@ -62,6 +67,15 @@ export function PersonalColorSelector({ value, onChange }: PersonalColorSelector
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-6">
+          <Button
+            onClick={() => setAiModalOpen(true)}
+            className="w-full bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            AI診断
+          </Button>
+        </div>
         <RadioGroup value={value} onValueChange={handlePersonalColorChange}>
           <div className="grid gap-4">
             {personalColors.map((color) => (
@@ -99,6 +113,15 @@ export function PersonalColorSelector({ value, onChange }: PersonalColorSelector
           </div>
         </RadioGroup>
       </CardContent>
+
+      <AIDiagnosisModal
+        open={aiModalOpen}
+        onOpenChange={setAiModalOpen}
+        onDiagnosisComplete={(color) => {
+          onChange(color)
+          setAiModalOpen(false)
+        }}
+      />
     </Card>
   )
 }
