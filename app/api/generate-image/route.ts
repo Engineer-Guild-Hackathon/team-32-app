@@ -15,9 +15,9 @@ async function generateImageHandler(request: NextRequest, userId: string, reques
       return NextResponse.json({ error: 'API key not configured.' }, { status: 500 });
     }
 
-    // Gemini 2.5 Flash Image (Nano Banana) を正しく使用
+    // Imagen 4 Fast を使用するために GoogleGenerativeAI を初期化
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    const model = genAI.getGenerativeModel({ model: "imagen-4-fast" });
 
     const result = await model.generateContent([
       `Create a high-quality, clean product photo of a ${prompt}. The image should be on a white background, well-lit, and show the clothing item clearly. Style: professional product photography, clean and minimalist.`
@@ -32,13 +32,12 @@ async function generateImageHandler(request: NextRequest, userId: string, reques
         return NextResponse.json({ success: true, imageUrl });
       }
     }
-
-    // 画像が見つからない場合はプレースホルダーを返す
-    const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NjY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEdlbmVyYXRpb248L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjEuNWVtIj5JbWFnZSBHZW5lcmF0aW9uPC90ZXh0Pjwvc3ZnPg==';
-    return NextResponse.json({ success: true, imageUrl: placeholderImage });
+    
+    // 画像が見つからない場合はエラーを返す
+    return NextResponse.json({ error: 'Failed to generate image' }, { status: 500 });
     
   } catch (error) {
-    console.error('Error in generate-image API:', error);
+    console.error('Error in generate-image API (Imagen):', error);
     return NextResponse.json(
       { error: `Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
