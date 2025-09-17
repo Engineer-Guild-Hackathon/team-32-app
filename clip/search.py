@@ -1,32 +1,27 @@
-from PIL import Image
 from sentence_transformers import SentenceTransformer
 import vecs
-from matplotlib import pyplot as plt
-from matplotlib import image as mpimg
 from dotenv import load_dotenv
 import os
 
 load_dotenv("../.env.local")
 
 db_url = os.getenv("DB_URL")
+if db_url is None:
+    raise ValueError("DB_URL environment variable is not set")
 
-# create vector store client
 vx = vecs.create_client(db_url)
-images = vx.get_or_create_collection(name="image_vectors", dimension=512)
-# Load CLIP model
+
+images = vx.get_or_create_collection(name="ec_item_vectors", dimension=512)
+
 model = SentenceTransformer('clip-ViT-B-32')
-# Encode text query
-query_string = "a bike in front of a red brick wall"
+
+query_string = "white t-shirt"
 text_emb = model.encode(query_string)
-# query the collection filtering metadata for "type" = "jpg"
+
 results = images.query(
-    data=text_emb,                      # required
-    limit=1,                            # number of records to return
-    filters={"type": {"$eq": "jpg"}},   # metadata filters
+    data=text_emb,
+    limit=10,
+    filters={"category": {"$eq": "tops"}},
 )
-result = results[0]
-print(result)
-plt.title(result)
-image = mpimg.imread('./images/' + result)
-plt.imshow(image)
-plt.show()
+
+print(results)
