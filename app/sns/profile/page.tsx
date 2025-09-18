@@ -124,7 +124,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* スマートフォン用固定ヘッダー */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
@@ -140,7 +140,7 @@ export default function ProfilePage() {
       <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
 
         {/* プロフィールヘッダー */}
-        <Card className="mb-4 border-0 shadow-sm">
+        <Card className="mb-4 border-0 shadow-sm bg-white">
           <CardContent className="pt-4 px-4">
             <div className="flex items-center space-x-4">
               <Avatar className="w-16 h-16">
@@ -192,14 +192,14 @@ export default function ProfilePage() {
 
         {/* タブ */}
         <Tabs defaultValue="posts" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="posts" className="text-xs">投稿</TabsTrigger>
-            <TabsTrigger value="likes" className="text-xs">いいね</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-md p-1">
+            <TabsTrigger value="posts" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">投稿</TabsTrigger>
+            <TabsTrigger value="likes" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">いいね</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-3">
             {posts.length === 0 ? (
-              <Card className="border-0 shadow-sm">
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="text-center py-8 px-4">
                   <p className="text-muted-foreground text-sm mb-4">まだ投稿がありません</p>
                   <Link href="/sns/create">
@@ -213,7 +213,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 {posts.map((post) => (
-                  <Card key={post.id} className="border-0 shadow-sm">
+                  <Card key={post.id} className="border-0 shadow-sm bg-white">
                     <CardContent className="pt-4 px-4 pb-4">
                       <div className="flex items-center space-x-3 mb-3">
                         <Avatar className="h-8 w-8">
@@ -260,7 +260,7 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="likes">
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm bg-white">
               <CardContent className="text-center py-8 px-4">
                 <p className="text-muted-foreground text-sm">いいねした投稿はありません</p>
               </CardContent>

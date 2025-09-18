@@ -93,9 +93,9 @@ export default function SNSHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* スマートフォン用固定ヘッダー */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           {/* ハンバーガーメニュー */}
           <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
@@ -118,7 +118,7 @@ export default function SNSHomePage() {
         {/* 投稿一覧 */}
         <div className="space-y-4">
           {posts.length === 0 ? (
-            <Card className="mx-0">
+            <Card className="mx-0 bg-white">
               <CardContent className="text-center py-12 px-6">
                 <p className="text-muted-foreground text-sm mb-4">まだ投稿がありません</p>
                 <Link href="/sns/create">
@@ -130,7 +130,7 @@ export default function SNSHomePage() {
             </Card>
           ) : (
             posts.map((post) => (
-              <Card key={post.id} className="overflow-hidden border-0 shadow-sm">
+              <Card key={post.id} className="overflow-hidden border-0 shadow-sm bg-white">
                 <CardHeader className="pb-3 px-4 pt-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

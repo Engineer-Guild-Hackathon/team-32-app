@@ -85,52 +85,48 @@ export default function CreatePostPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center">
-          <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="ml-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+    <div className="container mx-auto px-4 py-4 max-w-xl sm:max-w-2xl bg-white min-h-screen">
+      {/* ヘッダー（モバイル最適化） */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 -mx-4 px-4 py-3 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="ml-1"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </div>
+          <h1 className="text-lg font-bold">新しい投稿</h1>
+          <div className="w-6" />
         </div>
-        <h1 className="text-3xl font-bold">新しい投稿</h1>
-        <div className="w-12"></div> {/* スペーサー */}
       </div>
 
-      <Card>
+      <Card className="shadow-sm bg-white">
         <CardHeader>
-          <CardTitle>投稿を作成</CardTitle>
+          <CardTitle className="text-base sm:text-lg">投稿を作成</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             {/* テキスト入力 */}
             <div className="space-y-2">
-              <Label htmlFor="content">投稿内容（任意）</Label>
-              <p className="text-sm text-muted-foreground">
-                テキストまたは画像のいずれかは必須です
-              </p>
+              <Label htmlFor="content">投稿内容</Label>
               <Textarea
                 id="content"
-                placeholder="今日のコーディネートをシェアしましょう...（任意）"
+                placeholder="今日のコーディネートをシェアしましょう..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="min-h-[120px]"
+                className="min-h-[120px] text-base sm:text-sm"
               />
             </div>
 
             {/* 画像アップロード */}
             <div className="space-y-2">
-              <Label htmlFor="image">画像（任意）</Label>
-              <p className="text-sm text-muted-foreground">
-                テキストまたは画像のいずれかは必須です
-              </p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <Label htmlFor="image">画像</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center bg-white">
                 <input
                   id="image"
                   type="file"
@@ -144,7 +140,7 @@ export default function CreatePostPage() {
                       <img
                         src={imagePreview}
                         alt="プレビュー"
-                        className="w-full h-48 object-cover rounded-lg mx-auto"
+                        className="w-full h-40 sm:h-48 object-cover rounded-lg mx-auto"
                       />
                       <Button
                         type="button"
@@ -160,7 +156,7 @@ export default function CreatePostPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <ImageIcon className="w-12 h-12 mx-auto text-gray-400" />
+                      <ImageIcon className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-400" />
                       <p className="text-sm text-gray-600">
                         クリックして画像をアップロード
                       </p>
@@ -189,7 +185,7 @@ export default function CreatePostPage() {
             </div>
 
             {/* 送信ボタン */}
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"

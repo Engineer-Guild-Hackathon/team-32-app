@@ -20,18 +20,49 @@ async function getUserCloset(request: NextRequest, context: { params: Promise<{ 
       return NextResponse.json({ error: 'Failed to fetch closet' }, { status: 500 });
     }
 
-    // 既存のitemsテーブルの形式をSNS用の形式に変換
-    const closetItems = (items || []).map(item => ({
-      id: item.id,
-      name: item.name || `${item.category}アイテム`,
-      category: item.category,
-      image_url: item.image_path ? 
-        supabase.storage.from('users').getPublicUrl(item.image_path).data.publicUrl : 
-        null,
-      created_at: item.created_at
+    // クエリでカテゴリ別グルーピングを制御
+    const { searchParams } = new URL(request.url);
+    const grouped = searchParams.get('grouped') === 'true';
+
+    // 既存のitemsをSNS用形式へ変換（ストレージは署名付きURLを発行）
+    const closetItems = await Promise.all((items || []).map(async (item) => {
+      let imageUrl: string | null = null;
+      if (item.image_path) {
+        const { data: signed, error: signedErr } = await supabase
+          .storage
+          .from('users')
+          .createSignedUrl(item.image_path, 60 * 60); // 有効期限: 1時間
+
+        if (!signedErr && signed?.signedUrl) {
+          imageUrl = signed.signedUrl;
+        } else {
+          console.warn('Failed to create signed URL for', item.image_path, signedErr);
+        }
+      }
+
+      return {
+        id: item.id,
+        name: `${item.category}アイテム`,
+        category: item.category as string,
+        image_url: imageUrl,
+        created_at: item.created_at,
+      };
     }));
 
-    return NextResponse.json(closetItems);
+    if (!grouped) {
+      return NextResponse.json(closetItems);
+    }
+
+    // 種類（カテゴリ）ごとに配列でグルーピング
+    type ClosetItem = typeof closetItems[number];
+    const groupedByCategory = closetItems.reduce<Record<string, ClosetItem[]>>((acc, item) => {
+      const key = item.category || 'unknown';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    return NextResponse.json(groupedByCategory);
   } catch (error) {
     console.error('Error in getUserCloset:', error);
     return NextResponse.json({ 
