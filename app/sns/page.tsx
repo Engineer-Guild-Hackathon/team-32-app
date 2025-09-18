@@ -135,13 +135,13 @@ export default function SNSHomePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src="" />
+                        <AvatarImage src={`/api/avatar/${post.user_id}`} />
                         <AvatarFallback className="text-sm">
                           U
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-sm">ユーザー {post.user_id.slice(0, 8)}</p>
+                        <p className="font-medium text-sm">{post.author_display_name || `ユーザー ${post.user_id.slice(0, 8)}`}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(post.created_at)}
                         </p>
