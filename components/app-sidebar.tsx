@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Menu, User, Shirt, Sparkles, Home } from "lucide-react"
+import { Menu, User, Shirt, Sparkles, Home, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import {
@@ -53,6 +53,12 @@ export function AppSidebar({ isMenuOpen, setIsMenuOpen }: AppSidebarProps) {
               <Button variant="ghost" className="w-full justify-start gap-3 py-3">
                 <Sparkles className="h-5 w-5" />
                 Fit＆Check
+              </Button>
+            </Link>
+            <Link href="/sns" onClick={() => setIsMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-3 py-3">
+                <Users className="h-5 w-5" />
+                SNS
               </Button>
             </Link>
           </div>
