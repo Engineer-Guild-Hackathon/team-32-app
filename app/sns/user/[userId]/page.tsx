@@ -332,7 +332,7 @@ export default function UserProfilePage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">ユーザー {userId.slice(0, 8)}</p>
+                          <p className="font-medium text-sm">{post.author_display_name || `ユーザー ${userId.slice(0, 8)}`}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatDate(post.created_at)}
                           </p>

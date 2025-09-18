@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { withAuth } from '@/lib/with-auth';
 
 async function getPosts(request: NextRequest, context: any, userId: string) {
@@ -44,10 +44,27 @@ async function getPosts(request: NextRequest, context: any, userId: string) {
 
       const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
-      // いいね状態を追加
+      // 投稿者ごとの display_name を auth.user_metadata から取得（サービスキー利用）
+      const authorIds = Array.from(new Set(posts.map(p => p.user_id)));
+      const authorDisplayNameMap: Record<string, string | null> = {};
+      try {
+        const service = createServiceClient();
+        for (const id of authorIds) {
+          try {
+            const { data: userRes } = await (service as any).auth.admin.getUserById(id);
+            const u = (userRes as any)?.user;
+            if (u) {
+              authorDisplayNameMap[id] = u.user_metadata?.display_name ?? null;
+            }
+          } catch {}
+        }
+      } catch {}
+
+      // いいね状態と表示名を追加
       const postsWithLikes = posts.map(post => ({
         ...post,
-        is_liked: likedPostIds.has(post.id)
+        is_liked: likedPostIds.has(post.id),
+        author_display_name: authorDisplayNameMap[post.user_id] ?? null,
       }));
 
       return NextResponse.json(postsWithLikes);
