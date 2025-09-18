@@ -42,6 +42,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.2",
     "@sveltejs/kit": "latest",
+    "@types/uuid": "^10.0.0",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
     "aws-sdk": "^2.1692.0",
