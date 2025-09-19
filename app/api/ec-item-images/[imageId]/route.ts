@@ -29,16 +29,32 @@ export async function GET(
   }
 
   const safeImageId = path.basename(imageId)
-  const supabase = createServiceClient()
 
   try {
+    const filePath = path.join(DATASET_DIR, safeImageId)
+    const file = await fs.readFile(filePath)
+    const binary = new Uint8Array(file)
+
+    return new NextResponse(binary, {
+      status: 200,
+      headers: {
+        'Content-Type': resolveContentType(safeImageId),
+        'Cache-Control': 'public, max-age=3600',
+      },
+    })
+  } catch {
+    // fall through to Supabase storage lookup
+  }
+
+  try {
+    const supabase = createServiceClient()
     const { data, error } = await supabase.storage
       .from(IMAGE_BUCKET)
       .download(safeImageId)
 
     if (!error && data) {
-      const buffer = Buffer.from(await data.arrayBuffer())
-      return new NextResponse(buffer, {
+      const arrayBuffer = await data.arrayBuffer()
+      return new NextResponse(arrayBuffer, {
         status: 200,
         headers: {
           'Content-Type': data.type || resolveContentType(safeImageId),
@@ -54,19 +70,6 @@ export async function GET(
     console.warn('Unexpected error while downloading image:', safeImageId, error)
   }
 
-  try {
-    const filePath = path.join(DATASET_DIR, safeImageId)
-    const file = await fs.readFile(filePath)
-
-    return new NextResponse(file, {
-      status: 200,
-      headers: {
-        'Content-Type': resolveContentType(safeImageId),
-        'Cache-Control': 'public, max-age=3600',
-      },
-    })
-  } catch (error) {
-    console.error('Image not found in local dataset:', safeImageId, error)
-    return NextResponse.json({ error: 'Image not found' }, { status: 404 })
-  }
+  console.error('Image not found in local dataset or storage:', safeImageId)
+  return NextResponse.json({ error: 'Image not found' }, { status: 404 })
 }
