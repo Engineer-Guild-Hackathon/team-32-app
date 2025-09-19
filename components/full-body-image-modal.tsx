@@ -16,7 +16,7 @@ import { UsageConfirmationDialog } from "@/components/usage-confirmation-dialog"
 interface FullBodyImageModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (file: File) => void
+  onSave: (file: File) => Promise<void> | void
 }
 
 export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImageModalProps) {
@@ -90,14 +90,32 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
     }
   }
 
+  const closeModal = () => {
+    resetState()
+    onOpenChange(false)
+  }
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (isSaving && !nextOpen) {
+      return
+    }
+
+    if (!nextOpen) {
+      closeModal()
+    } else {
+      onOpenChange(true)
+    }
+  }
+
   const handleSaveUploaded = async () => {
     if (!uploadedFile) return;
 
     setIsSaving(true)
     try {
-      onSave(uploadedFile)
-      resetState()
-      onOpenChange(false)
+      await onSave(uploadedFile)
+      closeModal()
+    } catch (error) {
+      console.error('Error while saving uploaded image:', error)
     } finally {
       setIsSaving(false)
     }
@@ -113,9 +131,10 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
       const blob = await response.blob()
       const file = new File([blob], 'generated-full-body.png', { type: 'image/png' })
 
-      onSave(file)
-      resetState()
-      onOpenChange(false)
+      await onSave(file)
+      closeModal()
+    } catch (error) {
+      console.error('Error while saving generated image:', error)
     } finally {
       setIsSaving(false)
     }
@@ -129,13 +148,8 @@ export function FullBodyImageModal({ open, onOpenChange, onSave }: FullBodyImage
     setGenerationError(null)
   }
 
-  const handleClose = () => {
-    resetState()
-    onOpenChange(false)
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>全身写真を登録</DialogTitle>
