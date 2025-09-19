@@ -86,24 +86,42 @@ export async function POST(request: Request) {
 
     console.log('Processing search results:', searchResults.map(r => ({ id: r.item_id, similarity: r.similarity })))
 
-    // Get public URLs for images from ec_item_images bucket
-    const itemsWithImages = searchResults.map((result) => {
-      // The item_id is actually the filename in ec_item_images bucket
-      const { data: publicUrlData } = supabase.storage
-        .from('ec_item_images')
-        .getPublicUrl(result.item_id)
+    // 署名付きURLを優先的に取得し、失敗時は公開URLをフォールバックとして利用
+    const itemsWithImages = await Promise.all(searchResults.map(async (result) => {
+      let storageUrl: string | null = null
 
-      console.log(`Mapped result ${result.item_id} to URL:`, publicUrlData.publicUrl)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('ec_item_images')
+        .createSignedUrl(result.item_id, 60 * 60) // 有効期限: 1時間
+
+      if (!signedUrlError && signedUrlData?.signedUrl) {
+        storageUrl = signedUrlData.signedUrl
+      } else {
+        if (signedUrlError) {
+          console.warn('Failed to create signed URL for', result.item_id, signedUrlError)
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('ec_item_images')
+          .getPublicUrl(result.item_id)
+
+        storageUrl = publicUrlData?.publicUrl ?? null
+      }
+
+      const proxyUrl = `/api/ec-item-images/${encodeURIComponent(result.item_id)}`
+
+      console.log(`Mapped result ${result.item_id} to URL:`, storageUrl ?? 'proxy')
 
       return {
         id: result.item_id,
-        image_url: publicUrlData.publicUrl,
+        image_url: proxyUrl,
+        storage_url: storageUrl,
         similarity: result.similarity,
         // Since these are from ec_item_images, we don't have category info
         // unless it's in the metadata
         category: category === 'all' ? null : category
       }
-    })
+    }))
 
     console.log('Final items with images count:', itemsWithImages.length)
     return NextResponse.json({ items: itemsWithImages })
