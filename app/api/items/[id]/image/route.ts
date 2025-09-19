@@ -7,25 +7,23 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    
+    // SNS用なので認証は不要
+    console.log(`Fetching image for item ID: ${params.id} (SNS access)`)
 
-    if (!user) {
-      console.log('Unauthorized access attempt to image endpoint')
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    console.log(`Fetching image for item ID: ${params.id} for user: ${user.id}`)
-
+    console.log(`Querying database for item ID: ${params.id}`)
+    
     const { data: item, error: itemError } = await supabase
       .from('items')
       .select('image_path')
       .eq('id', params.id)
-      .eq('user_id', user.id)
       .single()
+
+    console.log('Database query result:', { item, itemError })
 
     if (itemError) {
       console.error('Database error:', itemError)
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Item not found', details: itemError }, { status: 404 })
     }
 
     if (!item) {
@@ -35,13 +33,17 @@ export async function GET(
 
     console.log(`Image path found: ${item.image_path}`)
 
+  console.log(`Attempting to download image from storage: ${item.image_path}`)
+  
   const { data, error } = await supabase.storage
     .from('users')
     .download(item.image_path)
 
+  console.log('Storage download result:', { data: !!data, error })
+
   if (error) {
     console.error('Failed to download image from storage:', error)
-    return NextResponse.json({ error: 'Image not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Image not found', details: error }, { status: 404 })
   }
 
     // Supabaseから取得したBlobオブジェクトには正しいMIMEタイプが含まれている
