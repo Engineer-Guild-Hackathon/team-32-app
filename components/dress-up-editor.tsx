@@ -33,9 +33,10 @@ const categoryConfig = {
 
 interface DressUpEditorProps {
   onImageGenerated?: (imageUrl: string) => void;
+  onItemsUsed?: (items: ClothingItem[]) => void;
 }
 
-export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
+export function DressUpEditor({ onImageGenerated, onItemsUsed }: DressUpEditorProps = {}) {
   const { items: clothingItems, isLoading } = useClothingItems()
   const router = useRouter()
 
@@ -295,6 +296,8 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
       setGeneratedDressUpImage(finalImageUrl);
       // 親コンポーネントに生成された画像を通知
       onImageGenerated?.(finalImageUrl);
+      // 使用したアイテム一覧を親へ共有
+      onItemsUsed?.(clothingItems);
       // 画像生成完了後、使用済みアイテムを累積的に記録してから選択をクリア
       setUsedClothingItems(prev => {
         const newUsedItems = [...prev];
@@ -475,6 +478,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                     setUserPhoto(originalUserPhoto)
                     setSelectedClothingItems([])
                     setUsedClothingItems([])
+                    onItemsUsed?.([])
                   }}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />

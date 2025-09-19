@@ -6,12 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Loader2, Upload } from 'lucide-react';
 import { evaluateOutfitWithGemini } from '@/lib/gemini';
 import { UsageConfirmationDialog } from '@/components/usage-confirmation-dialog';
+import type { ClothingItem } from '@/lib/types/clothing';
+import { categoryConfig as clothingCategoryConfig } from '@/lib/types/clothing';
 
 interface OutfitEvaluatorProps {
   imageUrl?: string;
+  selectedItems?: ClothingItem[];
 }
 
-export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps) {
+export function OutfitEvaluator({ imageUrl: propImageUrl, selectedItems = [] }: OutfitEvaluatorProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -21,6 +24,8 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
   
   // プロパティで渡された画像URLまたはアップロードされた画像URLを使用
   const currentImageUrl = propImageUrl || uploadedImageUrl;
+  const hasPropImage = Boolean(propImageUrl);
+  const selectedItemsToDisplay = hasPropImage ? selectedItems : [];
   
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -107,7 +112,45 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
+              {hasPropImage && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-700">選択したアイテム</h3>
+                  {selectedItemsToDisplay.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedItemsToDisplay.map((item) => {
+                        const categoryLabel = clothingCategoryConfig[item.category]?.name ?? item.category;
+                        return (
+                          <div key={item.id} className="border rounded-md overflow-hidden bg-white">
+                            <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={`${categoryLabel} アイテム`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center text-gray-400 text-[11px] gap-1">
+                                  <Upload className="w-4 h-4" />
+                                  画像なし
+                                </div>
+                              )}
+                            </div>
+                            <div className="px-2 py-1">
+                              <p className="text-xs font-semibold text-gray-700">{categoryLabel}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      アイテム情報が取得できませんでした。
+                    </p>
+                  )}
+                </div>
+              )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 TPO（シーン）
@@ -145,18 +188,20 @@ export function OutfitEvaluator({ imageUrl: propImageUrl }: OutfitEvaluatorProps
                 </>
               )}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setUploadedImageUrl(null);
-                setEvaluationResult(null);
-                setError(null);
-              }}
-              className="w-full"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              別の画像をアップロード
-            </Button>
+              {!hasPropImage && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setUploadedImageUrl(null);
+                    setEvaluationResult(null);
+                    setError(null);
+                  }}
+                  className="w-full"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  別の画像をアップロード
+                </Button>
+              )}
           </div>
         )}
         
