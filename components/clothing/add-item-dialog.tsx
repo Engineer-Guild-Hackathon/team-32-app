@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Upload, Plus, Sparkles } from "lucide-react"
+import { Upload, Plus, Sparkles, Search } from "lucide-react"
 import { generateClothingItemImage } from "@/lib/gemini"
 import type { ClothingCategory, ClothingItem } from "@/lib/types/clothing"
 import { categoryConfig } from "@/lib/types/clothing"
@@ -37,6 +38,9 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [generatedImageFile, setGeneratedImageFile] = useState<File | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -134,6 +138,63 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
     }
   }
 
+  const handleSearch = async () => {
+    if (!searchQuery) return
+
+    setIsSearching(true)
+    try {
+      const response = await fetch('/api/items/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          category: selectedCategory
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data.items || [])
+      } else {
+        console.error('Search failed')
+        setSearchResults([])
+      }
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleSelectSearchItem = async (searchItem: any) => {
+    // Download the image from ec_item_images and save it as a new item
+    try {
+      setIsUploading(true)
+
+      // Fetch the image
+      const response = await fetch(searchItem.image_url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch image')
+      }
+
+      const blob = await response.blob()
+      const file = new File([blob], `search-${searchItem.id}.jpg`, { type: 'image/jpeg' })
+
+      // Save as new item with selected category
+      const item = await saveItem(file, selectedCategory)
+      onItemAdded(item)
+      handleClose()
+    } catch (error) {
+      console.error('Failed to add search item:', error)
+      alert('アイテムの追加に失敗しました')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const handleClose = () => {
     setIsOpen(false)
     setSelectedPhoto(null)
@@ -142,6 +203,8 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
     setGeneratedImageUrl(null)
     setGeneratedImageFile(null)
     setSelectedCategory(defaultCategory)
+    setSearchQuery("")
+    setSearchResults([])
   }
 
   const handleOpen = (open: boolean) => {
@@ -169,10 +232,14 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
         </DialogHeader>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload" className="gap-2">
               <Upload className="w-4 h-4" />
               写真をアップロード
+            </TabsTrigger>
+            <TabsTrigger value="search" className="gap-2">
+              <Search className="w-4 h-4" />
+              アイテムを探す
             </TabsTrigger>
             <TabsTrigger value="generate" className="gap-2">
               <Sparkles className="w-4 h-4" />
@@ -280,6 +347,80 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
                 </Button>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="search" className="space-y-4">
+            <div>
+              <Label htmlFor="category-search">カテゴリー *</Label>
+              <Select
+                value={selectedCategory}
+                onValueChange={(value) => setSelectedCategory(value as ClothingCategory)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categoryConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="search-query">検索キーワード</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="search-query"
+                  placeholder="例: 白いTシャツ、デニムパンツなど"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={!searchQuery || isSearching}>
+                  {isSearching ? "検索中..." : "検索"}
+                </Button>
+              </div>
+            </div>
+
+            {searchResults.length > 0 && (
+              <div>
+                <Label>検索結果 ({searchResults.length}件)</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto border rounded-lg p-2">
+                  {searchResults.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors relative"
+                      onClick={() => handleSelectSearchItem(item)}
+                    >
+                      <img
+                        src={item.image_url}
+                        alt="Search result"
+                        className="w-full h-24 object-cover rounded"
+                      />
+                      {item.similarity && (
+                        <p className="text-xs text-muted-foreground text-center mt-1">
+                          類似度: {(item.similarity * 100).toFixed(1)}%
+                        </p>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
+                          <span className="text-xs">追加中...</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {searchQuery && searchResults.length === 0 && !isSearching && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                検索結果が見つかりませんでした
+              </p>
+            )}
           </TabsContent>
         </Tabs>
         
