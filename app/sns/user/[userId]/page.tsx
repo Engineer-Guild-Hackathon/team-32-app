@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, MessageCircle, Users, UserPlus, UserMinus, ArrowLeft } from 'lucide-react';
+import type { ClothingCategory } from '@/lib/types/clothing';
+import { Heart, MessageCircle, Users, UserPlus, UserMinus, ArrowLeft, Shirt, Footprints, Watch } from 'lucide-react';
+import { PiPantsLight } from 'react-icons/pi';
 import { useUser } from '@/hooks/use-user';
 import { AppSidebar } from '@/components/app-sidebar';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
@@ -51,6 +53,13 @@ export default function UserProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [closet, setCloset] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<ClothingCategory>('tops');
+  const categoryIcons: Record<ClothingCategory, React.ComponentType<{ className?: string }>> = {
+    tops: Shirt,
+    bottoms: PiPantsLight as unknown as React.ComponentType<{ className?: string }>,
+    shoes: Footprints,
+    accessories: Watch,
+  };
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -153,7 +162,7 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
@@ -171,7 +180,7 @@ export default function UserProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <AppSidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
@@ -199,7 +208,7 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* スマートフォン用固定ヘッダー */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
@@ -220,7 +229,7 @@ export default function UserProfilePage() {
       <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
 
         {/* プロフィールヘッダー */}
-        <Card className="mb-4 border-0 shadow-sm">
+        <Card className="mb-4 border-0 shadow-sm bg-white">
           <CardContent className="pt-4 px-4">
             <div className="flex items-center space-x-4">
               <Avatar className="w-16 h-16">
@@ -298,14 +307,14 @@ export default function UserProfilePage() {
 
         {/* タブ */}
         <Tabs defaultValue="posts" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="posts" className="text-xs">投稿</TabsTrigger>
-            <TabsTrigger value="closet" className="text-xs">クローゼット</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-md p-1">
+            <TabsTrigger value="posts" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">投稿</TabsTrigger>
+            <TabsTrigger value="closet" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">クローゼット</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-3">
             {posts.length === 0 ? (
-              <Card className="border-0 shadow-sm">
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="text-center py-8 px-4">
                   <p className="text-muted-foreground text-sm">まだ投稿がありません</p>
                 </CardContent>
@@ -313,7 +322,7 @@ export default function UserProfilePage() {
             ) : (
               <div className="space-y-3">
                 {posts.map((post) => (
-                  <Card key={post.id} className="border-0 shadow-sm">
+                  <Card key={post.id} className="border-0 shadow-sm bg-white">
                     <CardContent className="pt-4 px-4 pb-4">
                       <div className="flex items-center space-x-3 mb-3">
                         <Avatar className="h-8 w-8">
@@ -323,7 +332,7 @@ export default function UserProfilePage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">ユーザー {userId.slice(0, 8)}</p>
+                          <p className="font-medium text-sm">{post.author_display_name || `ユーザー ${userId.slice(0, 8)}`}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatDate(post.created_at)}
                           </p>
@@ -369,37 +378,56 @@ export default function UserProfilePage() {
               <Card className="border-0 shadow-sm">
                 <CardContent className="text-center py-8 px-4">
                   <p className="text-muted-foreground text-sm">このユーザーはまだ服を登録していません</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    服を登録すると、ここに表示されます
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">服を登録すると、ここに表示されます</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {closet.map((item) => (
-                  <Card key={item.id} className="overflow-hidden border-0 shadow-sm">
-                    {item.image_url ? (
-                      <div className="aspect-square">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+              <div className="space-y-3">
+                {/* カテゴリタブ */}
+                <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as ClothingCategory)}>
+                  <TabsList className="grid w-full grid-cols-4 bg-gray-100 rounded-md p-1">
+                    {(['tops','bottoms','shoes','accessories'] as ClothingCategory[]).map((cat) => {
+                      const Icon = categoryIcons[cat];
+                      return (
+                        <TabsTrigger key={cat} value={cat} className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">
+                          <Icon className="w-4 h-4" />
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+
+                  {(['tops','bottoms','shoes','accessories'] as ClothingCategory[]).map((cat) => (
+                    <TabsContent key={cat} value={cat} className="mt-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        {closet.filter((i) => i.category === cat).map((item) => (
+                          <Card key={item.id} className="overflow-hidden border-0 shadow-sm bg-white">
+                            {item.image_url ? (
+                              <div className="aspect-square bg-white">
+                                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="aspect-square bg-white flex items-center justify-center">
+                                <div className="text-center text-gray-400">
+                                  <div className="text-xl mb-1">👕</div>
+                                  <div className="text-xs">画像なし</div>
+                                </div>
+                              </div>
+                            )}
+                          </Card>
+                        ))}
+                        {closet.filter((i) => i.category === cat).length === 0 && (
+                          <div className="col-span-3">
+                            <Card className="border-0 shadow-sm bg-white">
+                              <CardContent className="text-center py-8 px-4">
+                                <p className="text-muted-foreground text-sm">このカテゴリのアイテムはありません</p>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                        <div className="text-center text-gray-400">
-                          <div className="text-xl mb-1">👕</div>
-                          <div className="text-xs">画像なし</div>
-                        </div>
-                      </div>
-                    )}
-                    <CardContent className="p-2">
-                      <h3 className="font-medium text-xs truncate">{item.name}</h3>
-                      <p className="text-xs text-muted-foreground truncate">{item.category}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </div>
             )}
           </TabsContent>

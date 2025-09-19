@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,10 @@ export default function ProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [displayName, setDisplayName] = useState<string>('');
+  const [savingName, setSavingName] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState<number>(Date.now());
 
   useEffect(() => {
     if (user) {
@@ -53,6 +58,7 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
+        setDisplayName(data.display_name || '');
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -70,6 +76,50 @@ export default function ProfilePage() {
       console.error('Failed to fetch posts:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDisplayName = async () => {
+    try {
+      setSavingName(true);
+      const res = await fetch('/api/sns/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ display_name: displayName.trim() || null }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        console.error('Failed to update display name', e);
+        alert('表示名の更新に失敗しました');
+        return;
+      }
+      await fetchProfile();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const fileInputId = 'avatar-upload-input';
+  const handleAvatarChange = async (file: File | null) => {
+    if (!file) return;
+    try {
+      setAvatarUploading(true);
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/sns/profile/avatar', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        console.error('Avatar upload failed', e);
+        alert('プロフィール画像の更新に失敗しました');
+        return;
+      }
+      setAvatarVersion(Date.now());
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -124,7 +174,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* スマートフォン用固定ヘッダー */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
@@ -140,18 +190,29 @@ export default function ProfilePage() {
       <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
 
         {/* プロフィールヘッダー */}
-        <Card className="mb-4 border-0 shadow-sm">
+        <Card className="mb-4 border-0 shadow-sm bg-white">
           <CardContent className="pt-4 px-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <Avatar className="w-16 h-16">
-                <AvatarImage src={`/api/avatar/${user.id}`} />
+                <AvatarImage src={`/api/avatar/${user.id}?v=${avatarVersion}`} />
                 <AvatarFallback className="text-lg">
                   {profile?.personal_color?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 min-w-[220px] space-y-1">
                 <h2 className="text-lg font-bold">プロフィール情報</h2>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="表示名"
+                    className="h-8 flex-1 min-w-0"
+                  />
+                  <Button size="sm" className="h-8 px-3 whitespace-nowrap" onClick={handleSaveDisplayName} disabled={savingName}>
+                    {savingName ? '保存中...' : '保存'}
+                  </Button>
+                </div>
                 
                 <div className="flex flex-wrap gap-1">
                   {profile?.personal_color && (
@@ -170,6 +231,19 @@ export default function ProfilePage() {
                   {profile ? formatDate(profile.created_at) : '不明'}
                 </p>
               </div>
+            </div>
+
+            <div className="mt-3">
+              <input
+                id={fileInputId}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)}
+              />
+              <Button variant="outline" size="sm" className="h-8 px-3 w-full sm:w-auto" onClick={() => document.getElementById(fileInputId)?.click()} disabled={avatarUploading}>
+                {avatarUploading ? 'アップロード中...' : '画像を変更'}
+              </Button>
             </div>
             
             {/* 統計情報 */}
@@ -192,14 +266,14 @@ export default function ProfilePage() {
 
         {/* タブ */}
         <Tabs defaultValue="posts" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="posts" className="text-xs">投稿</TabsTrigger>
-            <TabsTrigger value="likes" className="text-xs">いいね</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-md p-1">
+            <TabsTrigger value="posts" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">投稿</TabsTrigger>
+            <TabsTrigger value="likes" className="text-xs text-gray-600 rounded data-[state=active]:bg-white data-[state=active]:text-gray-900">いいね</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-3">
             {posts.length === 0 ? (
-              <Card className="border-0 shadow-sm">
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="text-center py-8 px-4">
                   <p className="text-muted-foreground text-sm mb-4">まだ投稿がありません</p>
                   <Link href="/sns/create">
@@ -213,7 +287,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 {posts.map((post) => (
-                  <Card key={post.id} className="border-0 shadow-sm">
+                  <Card key={post.id} className="border-0 shadow-sm bg-white">
                     <CardContent className="pt-4 px-4 pb-4">
                       <div className="flex items-center space-x-3 mb-3">
                         <Avatar className="h-8 w-8">
@@ -260,7 +334,7 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="likes">
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm bg-white">
               <CardContent className="text-center py-8 px-4">
                 <p className="text-muted-foreground text-sm">いいねした投稿はありません</p>
               </CardContent>

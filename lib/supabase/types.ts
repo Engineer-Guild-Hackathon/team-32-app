@@ -185,6 +185,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_items_by_vector: {
+        Args: {
+          query_embedding: number[]
+          match_count?: number
+          filter_category?: string | null
+        }
+        Returns: {
+          item_id: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       frame_type: "straight" | "wave" | "natural"
