@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -30,7 +30,7 @@ interface ClothingItem {
   created_at: string;
 }
 
-export default function ClothingPage() {
+function ClothingPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const userId = searchParams.get('userId')
@@ -188,5 +188,17 @@ export default function ClothingPage() {
         </main>
       </MobilePageBackground>
     </BackgroundProvider>
+  )
+}
+
+export default function ClothingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <ClothingPageContent />
+    </Suspense>
   )
 }
