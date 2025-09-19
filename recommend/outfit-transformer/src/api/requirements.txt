@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pillow
+transformers
+numpy
+tqdm
+opencv-python

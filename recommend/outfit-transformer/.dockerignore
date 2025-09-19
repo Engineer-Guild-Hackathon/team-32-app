@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+venv
+build
+dist
+logs
+wandb
+results
+datasets
+*.zip
+.torch
+__MACOSX
