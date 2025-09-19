@@ -78,28 +78,29 @@ export function ProfileSetup() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      
+
       const uploadResponse = await fetch('/api/upload-full-body', {
         method: 'POST',
         body: formData,
       })
 
       if (!uploadResponse.ok) {
-        console.error('Failed to upload image')
-        alert('画像のアップロードに失敗しました')
-        return
+        throw new Error('画像のアップロードに失敗しました')
       }
 
-      // Reload the image
       const imageResponse = await fetch('/api/full-body-image')
-      if (imageResponse.ok) {
-        const imageBlob = await imageResponse.blob()
-        const imageUrl = URL.createObjectURL(imageBlob)
-        setCurrentImageUrl(imageUrl)
+      if (!imageResponse.ok) {
+        throw new Error('画像の再読み込みに失敗しました')
       }
+
+      const imageBlob = await imageResponse.blob()
+      const imageUrl = URL.createObjectURL(imageBlob)
+      setCurrentImageUrl(imageUrl)
     } catch (error) {
       console.error('Failed to upload image:', error)
-      alert('画像のアップロードに失敗しました')
+      const message = error instanceof Error ? error.message : '画像のアップロードに失敗しました'
+      alert(message)
+      throw error
     }
   }
 
