@@ -7,10 +7,10 @@ type Plan = Database['public']['Enums']['plan'];
 // プラン別の制限値
 const PLAN_LIMITS: Record<Plan, { daily: number }> = {
   free: {
-    daily: 5,
+    daily: 20,
   },
   pro: {
-    daily: 20,
+    daily: 1000,
   },
 };
 
