@@ -7,6 +7,8 @@ export interface ClothingItem {
   created_at: string
   user_id: string
   imageUrl?: string
+  image_url?: string
+  name?: string
 }
 
 export const categoryConfig = {

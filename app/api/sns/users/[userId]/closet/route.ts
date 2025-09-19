@@ -7,6 +7,8 @@ async function getUserCloset(request: NextRequest, context: { params: Promise<{ 
     const supabase = await createClient();
 
     const { userId: targetUserId } = await context.params;
+    
+    console.log('Fetching closet for user:', targetUserId);
 
     // ユーザーのクローゼットを取得
     const { data: items, error } = await supabase
@@ -14,6 +16,11 @@ async function getUserCloset(request: NextRequest, context: { params: Promise<{ 
       .select('*')
       .eq('user_id', targetUserId)
       .order('created_at', { ascending: false });
+
+    console.log('Items found:', items?.length || 0, 'items');
+    if (items && items.length > 0) {
+      console.log('First item:', items[0]);
+    }
 
     if (error) {
       console.error('Error fetching user closet:', error);
@@ -24,30 +31,30 @@ async function getUserCloset(request: NextRequest, context: { params: Promise<{ 
     const { searchParams } = new URL(request.url);
     const grouped = searchParams.get('grouped') === 'true';
 
-    // 既存のitemsをSNS用形式へ変換（ストレージは署名付きURLを発行）
-    const closetItems = await Promise.all((items || []).map(async (item) => {
+    // 既存のitemsをSNS用形式へ変換（通常の画像エンドポイントを使用）
+    const closetItems = (items || []).map((item) => {
+      console.log('Processing item:', item.id, 'image_path:', item.image_path);
+      
       let imageUrl: string | null = null;
       if (item.image_path) {
-        const { data: signed, error: signedErr } = await supabase
-          .storage
-          .from('users')
-          .createSignedUrl(item.image_path, 60 * 60); // 有効期限: 1時間
-
-        if (!signedErr && signed?.signedUrl) {
-          imageUrl = signed.signedUrl;
-        } else {
-          console.warn('Failed to create signed URL for', item.image_path, signedErr);
-        }
+        // SNS専用の画像エンドポイントを使用
+        imageUrl = `/api/sns/images/${item.id}`;
+        console.log('Generated SNS image URL:', imageUrl);
+      } else {
+        console.log('No image_path for item:', item.id);
       }
 
-      return {
+      const result = {
         id: item.id,
         name: `${item.category}アイテム`,
         category: item.category as string,
         image_url: imageUrl,
         created_at: item.created_at,
       };
-    }));
+      
+      console.log('Final item result:', result);
+      return result;
+    });
 
     if (!grouped) {
       return NextResponse.json(closetItems);

@@ -12,7 +12,7 @@ interface CategoryTabsProps {
   items: ClothingItem[]
   activeCategory: ClothingCategory
   onCategoryChange: (category: ClothingCategory) => void
-  onDeleteItem: (id: string) => Promise<void>
+  onDeleteItem?: (id: string) => Promise<void>
 }
 
 const iconMap = {
