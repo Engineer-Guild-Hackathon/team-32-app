@@ -238,15 +238,15 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload" className="gap-2">
               <Upload className="w-4 h-4" />
-              写真をアップロード
+              写真を登録
             </TabsTrigger>
             <TabsTrigger value="search" className="gap-2">
               <Search className="w-4 h-4" />
-              アイテムを探す
+              探す
             </TabsTrigger>
             <TabsTrigger value="generate" className="gap-2">
               <Sparkles className="w-4 h-4" />
-              AIで生成
+              AI生成
             </TabsTrigger>
           </TabsList>
 
@@ -382,11 +382,11 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
             </div>
 
             <div>
-              <Label htmlFor="search-query">検索キーワード</Label>
+              <Label htmlFor="search-query">検索キーワード（英語を推奨）</Label>
               <div className="flex gap-2">
                 <Input
                   id="search-query"
-                  placeholder="例: 白いTシャツ、デニムパンツなど"
+                  placeholder="例: white t-shirt, black jeans"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)
