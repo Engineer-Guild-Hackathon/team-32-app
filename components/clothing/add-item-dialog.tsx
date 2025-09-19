@@ -41,6 +41,7 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any[]>([])
+  const [hasSearched, setHasSearched] = useState(false)
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -142,6 +143,7 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
     if (!searchQuery) return
 
     setIsSearching(true)
+    setHasSearched(true)
     try {
       const response = await fetch('/api/items/search', {
         method: 'POST',
@@ -205,6 +207,7 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
     setSelectedCategory(defaultCategory)
     setSearchQuery("")
     setSearchResults([])
+    setHasSearched(false)
   }
 
   const handleOpen = (open: boolean) => {
@@ -252,7 +255,10 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
               <Label htmlFor="category-upload">カテゴリー *</Label>
               <Select
                 value={selectedCategory}
-                onValueChange={(value) => setSelectedCategory(value as ClothingCategory)}
+                onValueChange={(value) => {
+                  setSelectedCategory(value as ClothingCategory)
+                  setHasSearched(false)
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -301,7 +307,10 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
               <Label htmlFor="category-generate">カテゴリー *</Label>
               <Select
                 value={selectedCategory}
-                onValueChange={(value) => setSelectedCategory(value as ClothingCategory)}
+                onValueChange={(value) => {
+                  setSelectedCategory(value as ClothingCategory)
+                  setHasSearched(false)
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -354,7 +363,10 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
               <Label htmlFor="category-search">カテゴリー *</Label>
               <Select
                 value={selectedCategory}
-                onValueChange={(value) => setSelectedCategory(value as ClothingCategory)}
+                onValueChange={(value) => {
+                  setSelectedCategory(value as ClothingCategory)
+                  setHasSearched(false)
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -376,7 +388,10 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
                   id="search-query"
                   placeholder="例: 白いTシャツ、デニムパンツなど"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setHasSearched(false)
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <Button onClick={handleSearch} disabled={!searchQuery || isSearching}>
@@ -400,11 +415,6 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
                         alt="Search result"
                         className="w-full h-24 object-cover rounded"
                       />
-                      {item.similarity && (
-                        <p className="text-xs text-muted-foreground text-center mt-1">
-                          類似度: {(item.similarity * 100).toFixed(1)}%
-                        </p>
-                      )}
                       {isUploading && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
                           <span className="text-xs">追加中...</span>
@@ -416,7 +426,7 @@ export function AddItemDialog({ onItemAdded, defaultCategory = "tops", children 
               </div>
             )}
 
-            {searchQuery && searchResults.length === 0 && !isSearching && (
+            {hasSearched && searchResults.length === 0 && !isSearching && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 検索結果が見つかりませんでした
               </p>
