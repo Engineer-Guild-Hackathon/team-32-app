@@ -65,6 +65,7 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["item_category"]
           created_at: string
+          embedding: number[] | null
           id: string
           image_path: string
           user_id: string
@@ -72,6 +73,7 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["item_category"]
           created_at?: string
+          embedding?: number[] | null
           id?: string
           image_path: string
           user_id?: string
@@ -79,6 +81,7 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["item_category"]
           created_at?: string
+          embedding?: number[] | null
           id?: string
           image_path?: string
           user_id?: string
@@ -339,4 +342,3 @@ export const Constants = {
     },
   },
 } as const
-

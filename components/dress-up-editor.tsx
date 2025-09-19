@@ -33,9 +33,10 @@ const categoryConfig = {
 
 interface DressUpEditorProps {
   onImageGenerated?: (imageUrl: string) => void;
+  onItemsUsed?: (items: ClothingItem[]) => void;
 }
 
-export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
+export function DressUpEditor({ onImageGenerated, onItemsUsed }: DressUpEditorProps = {}) {
   const { items: clothingItems, isLoading } = useClothingItems()
   const router = useRouter()
 
@@ -98,9 +99,9 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
         // 選択解除
         return prev.filter(selected => selected.id !== item.id)
       } else {
-        // 選択追加（2つまで制限）
-        if (prev.length >= 2) {
-          return prev // 2つを超えたら追加しない
+        const totalWithUsed = prev.length + usedClothingItems.length
+        if (totalWithUsed >= 6) {
+          return prev // 合計が6つを超えたら追加しない
         }
         return [...prev, item]
       }
@@ -242,7 +243,6 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
           baseImage = await convertDataUrlToFile(generatedDressUpImage);
         } catch (error) {
           console.error('Failed to convert generated image to File:', error);
-          // 生成画像の変換に失敗した場合は元の写真を使用
           if (!originalUserPhoto) {
             throw new Error('元の写真が見つかりません');
           }
@@ -255,39 +255,60 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
         baseImage = originalUserPhoto;
       }
 
-      // ベース画像も圧縮
-      let compressedBaseImage = baseImage;
-      const baseImageSize = baseImage.size;
-      console.log(`ベース画像のサイズ: ${formatFileSize(baseImageSize)}`);
+      const compressFileIfNeeded = async (file: File, label: string) => {
+        console.log(`${label}のサイズ: ${formatFileSize(file.size)}`);
+        if (file.size <= 1024 * 1024) {
+          return file;
+        }
 
-      if (baseImageSize > 1024 * 1024) {
-        console.log('ベース画像を圧縮中...');
-        const compressedDataUrl = await compressImage(baseImage, 800, 800, 0.7);
+        console.log(`${label}を圧縮中...`);
+        const compressedDataUrl = await compressImage(file, 800, 800, 0.7);
         const blob = await fetch(compressedDataUrl).then(r => r.blob());
-        compressedBaseImage = new File([blob], baseImage.name, { type: 'image/jpeg' });
-        console.log(`ベース画像の圧縮後のサイズ: ${formatFileSize(compressedBaseImage.size)}`);
+        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+        console.log(`${label}の圧縮後のサイズ: ${formatFileSize(compressedFile.size)}`);
+        return compressedFile;
+      };
+
+      let currentBaseImage = await compressFileIfNeeded(baseImage, 'ベース画像');
+      let finalImageUrl: string | null = null;
+
+      for (let index = 0; index < clothingImages.length; index += 2) {
+        const batch = clothingImages.slice(index, index + 2);
+        const batchNumber = Math.floor(index / 2) + 1;
+        console.log(`服の画像バッチ ${batchNumber} を処理中 (${batch.length}枚のアイテム)`);
+
+        const result = await generateDressUpImageFromImages(currentBaseImage, batch);
+
+        if (!result.success || !result.imageUrl) {
+          throw new Error(result.error || '着せ替え画像生成に失敗しました');
+        }
+
+        finalImageUrl = result.imageUrl;
+
+        const nextBaseImage = await convertDataUrlToFile(result.imageUrl);
+        currentBaseImage = await compressFileIfNeeded(nextBaseImage, `生成画像(ステップ${batchNumber})`);
       }
 
-      const result = await generateDressUpImageFromImages(compressedBaseImage, clothingImages);
+      if (!finalImageUrl) {
+        throw new Error('着せ替え画像を生成できませんでした');
+      }
 
-      if (result.success && result.imageUrl) {
-        setGeneratedDressUpImage(result.imageUrl);
-        // 親コンポーネントに生成された画像を通知
-        onImageGenerated?.(result.imageUrl);
-        // 画像生成完了後、使用済みアイテムを累積的に記録してから選択をクリア
-        setUsedClothingItems(prev => {
-          const newUsedItems = [...prev];
-          selectedClothingItems.forEach(item => {
-            if (!newUsedItems.find(used => used.id === item.id)) {
-              newUsedItems.push(item);
-            }
-          });
-          return newUsedItems;
+      setGeneratedDressUpImage(finalImageUrl);
+      // 親コンポーネントに生成された画像を通知
+      onImageGenerated?.(finalImageUrl);
+      // 使用したアイテム一覧を親へ共有
+      onItemsUsed?.(clothingItems);
+      // 画像生成完了後、使用済みアイテムを累積的に記録してから選択をクリア
+      setUsedClothingItems(prev => {
+        const newUsedItems = [...prev];
+        selectedClothingItems.forEach(item => {
+          if (!newUsedItems.find(used => used.id === item.id)) {
+            newUsedItems.push(item);
+          }
         });
-        setSelectedClothingItems([]);
-      } else {
-        alert(`着せ替え画像生成に失敗しました: ${result.error}`);
-      }
+        return newUsedItems;
+      });
+      setSelectedClothingItems([]);
     } catch (error) {
       console.error('Error generating dress-up image:', error);
 
@@ -457,6 +478,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                     setUserPhoto(originalUserPhoto)
                     setSelectedClothingItems([])
                     setUsedClothingItems([])
+                    onItemsUsed?.([])
                   }}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
@@ -501,7 +523,7 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
           <div className="px-3 py-2 border-b flex items-center justify-between">
             <h2 className="text-sm font-bold">クローゼット</h2>
             <span className="text-xs text-gray-500">
-              {selectedClothingItems.length}/2
+              {selectedClothingItems.length + usedClothingItems.length}/6
             </span>
           </div>
 
@@ -544,7 +566,8 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
                           getItemsByCategory(key as ClothingCategory).map((item) => {
                             const isSelected = selectedClothingItems.find(selected => selected.id === item.id)
                             const isUsed = usedClothingItems.find(used => used.id === item.id)
-                            const isMaxSelected = selectedClothingItems.length >= 2
+                            const totalSelected = selectedClothingItems.length + usedClothingItems.length
+                            const isMaxSelected = totalSelected >= 6
                             const isDisabled = isUsed || (!isSelected && isMaxSelected)
                             
                             return (
@@ -604,4 +627,3 @@ export function DressUpEditor({ onImageGenerated }: DressUpEditorProps = {}) {
     </div>
   )
 }
-

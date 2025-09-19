@@ -8,11 +8,13 @@ import { BackgroundProvider, MobilePageBackground, MobileBackgroundSelector } fr
 import { AppSidebar } from "@/components/app-sidebar"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import type { ClothingItem } from "@/lib/types/clothing"
 
 export default function StylingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showBackgroundSelector, setShowBackgroundSelector] = useState(false)
   const [generatedDressUpImage, setGeneratedDressUpImage] = useState<string | null>(null)
+  const [generatedItems, setGeneratedItems] = useState<ClothingItem[]>([])
 
   return (
     <BackgroundProvider>
@@ -65,11 +67,17 @@ export default function StylingPage() {
               </TabsList>
 
               <TabsContent value="editor">
-                <DressUpEditor onImageGenerated={setGeneratedDressUpImage} />
+                <DressUpEditor 
+                  onImageGenerated={setGeneratedDressUpImage} 
+                  onItemsUsed={setGeneratedItems}
+                />
               </TabsContent>
 
               <TabsContent value="evaluation">
-                <OutfitEvaluator imageUrl={generatedDressUpImage || undefined} />
+                <OutfitEvaluator 
+                  imageUrl={generatedDressUpImage || undefined} 
+                  selectedItems={generatedItems}
+                />
               </TabsContent>
             </Tabs>
           </div>

@@ -45,6 +45,48 @@ export async function POST(request: Request) {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
+  const clipEndpoint = process.env.CLIP_API_ENDPOINT
+
+  if (!clipEndpoint) {
+    return NextResponse.json({ error: 'CLIP API endpoint is not configured' }, { status: 500 })
+  }
+
+  const imageBase64 = buffer.toString('base64')
+
+  let embedding: number[]
+  try {
+    const clipResponse = await fetch(`${clipEndpoint}/vectorize-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image_base64: imageBase64 }),
+    })
+
+    if (!clipResponse.ok) {
+      return NextResponse.json({ error: 'Failed to retrieve image embedding' }, { status: 502 })
+    }
+
+    const clipPayload = (await clipResponse.json()) as { vector?: unknown }
+
+    if (!Array.isArray(clipPayload.vector)) {
+      return NextResponse.json({ error: 'Invalid embedding response from CLIP API' }, { status: 502 })
+    }
+
+    if (!clipPayload.vector.every((value) => typeof value === 'number')) {
+      return NextResponse.json({ error: 'Embedding vector must contain only numbers' }, { status: 502 })
+    }
+
+    if (clipPayload.vector.length !== 512) {
+      return NextResponse.json({ error: 'Embedding vector must have 512 dimensions' }, { status: 502 })
+    }
+
+    embedding = clipPayload.vector as number[]
+  } catch (error) {
+    console.error('Error while requesting CLIP embedding:', error)
+    return NextResponse.json({ error: 'Unable to compute image embedding' }, { status: 502 })
+  }
+
   const { error: uploadError } = await supabase.storage
     .from('users')
     .upload(fileName, buffer, {
@@ -60,7 +102,8 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       category: category as Database['public']['Enums']['item_category'],
-      image_path: fileName
+      image_path: fileName,
+      embedding,
     })
     .select()
     .single()

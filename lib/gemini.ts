@@ -130,6 +130,12 @@ export interface OutfitEvaluationResponse {
   error?: string;
 }
 
+export interface ImprovementExplanationResponse {
+  success: boolean;
+  explanation?: string;
+  error?: string;
+}
+
 // 着せ替え評価（Geminiベース）
 export async function evaluateOutfitWithGemini(
   imageData: string,
@@ -168,3 +174,39 @@ export async function evaluateOutfitWithGemini(
   }
 }
 
+export async function explainImprovementWithGemini(params: {
+  outfitImage: string;
+  originalItemImage: string;
+  replacementItemImage: string;
+  tpo?: string;
+}): Promise<ImprovementExplanationResponse> {
+  try {
+    const response = await fetch('/api/outfit-improvement/explanation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      return {
+        success: true,
+        explanation: data.explanation,
+      };
+    }
+
+    return {
+      success: false,
+      error: data.error || 'Failed to generate improvement explanation',
+    };
+  } catch (error) {
+    console.error('Error explaining improvement with Gemini:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
