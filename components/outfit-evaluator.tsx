@@ -207,14 +207,27 @@ export function OutfitEvaluator({ imageUrl: propImageUrl, selectedItems = [] }: 
         throw new Error('Unexpected response');
       }
 
+      const ignoredItemIds: string[] = Array.isArray(data.ignoredItemIds)
+        ? data.ignoredItemIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim() !== '')
+        : [];
+
       if (!data.success) {
         const message =
           data.reason === 'NO_REPLACEMENT_CANDIDATE'
             ? '同じカテゴリの代替アイテムが見つかりませんでした'
             : data.reason === 'ACCESSORY_CATEGORY_EXCLUDED'
             ? '小物は現在改善案の対象外です'
+            : data.reason === 'NO_VALID_SELECTION'
+            ? '選択したアイテムの埋め込みが未登録のため改善案を生成できませんでした'
             : data.error || '改善案の取得に失敗しました';
         return { suggestion: null, error: message };
+      }
+
+      if (!data.suggestion && ignoredItemIds.length === selectedItemIds.length && ignoredItemIds.length > 0) {
+        return {
+          suggestion: null,
+          error: '選択したアイテムの埋め込みが未登録のため改善案を生成できませんでした',
+        };
       }
 
       return { suggestion: data.suggestion, error: null };
