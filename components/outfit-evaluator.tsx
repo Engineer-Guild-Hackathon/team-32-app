@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Loader2, Upload, ArrowRight } from 'lucide-react';
@@ -422,8 +424,10 @@ export function OutfitEvaluator({ imageUrl: propImageUrl, selectedItems = [] }: 
             {evaluationResult.isTextFormat ? (
               <div className="p-4 bg-muted rounded-lg">
                 <h3 className="font-semibold mb-2">評価結果</h3>
-                <div className="whitespace-pre-wrap text-sm">
-                  {evaluationResult.evaluationText}
+                <div className="text-sm leading-relaxed space-y-2 [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_a]:text-blue-600">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {evaluationResult.evaluationText ?? ''}
+                  </ReactMarkdown>
                 </div>
               </div>
             ) : evaluationResult.evaluation ? (
@@ -524,8 +528,10 @@ export function OutfitEvaluator({ imageUrl: propImageUrl, selectedItems = [] }: 
                 解説を生成中...
               </div>
             ) : improvementExplanation ? (
-              <div className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
-                {improvementExplanation}
+              <div className="mt-2 text-sm leading-relaxed text-slate-700 space-y-2 [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_a]:text-blue-600">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {improvementExplanation}
+                </ReactMarkdown>
               </div>
             ) : improvementExplanationError ? (
               <p className="mt-2 text-xs text-red-600 text-center">{improvementExplanationError}</p>
